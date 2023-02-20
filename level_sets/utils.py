@@ -1,0 +1,104 @@
+import numpy as np
+import pandas as pd
+from skimage import measure
+
+# Used for testing
+# from skimage import io, color, img_as_ubyte
+# img = io.imread(r'C:\Users\QXZ1DJT\Google Drive\JP PhD\Data\DB\data\natural_images\car\car_0000.jpg')
+
+# gray = color.rgb2gray(img)
+# image = img_as_ubyte(gray)
+# io.imshow(image)
+
+# img = [[0,0,1,0,0],
+#        [0,0,1,0,0],
+#        [0,0,1,1,1],
+#        [2,2,0,0,0],
+#        [0,2,0,0,0]]
+    
+def get_level_sets(img, connectivity=1):
+    level_sets = measure.label(img+1,connectivity=1)
+    return level_sets
+
+def number_neighbours(c, nmax, N, M, connectivity):
+    neig_num = 0
+    neigs = np.zeros((N,M))
+    og_c = c.copy()
+    for i in range(nmax):
+        neig_num += 1
+        for j in range(len(c)):
+            if connectivity==4:
+                i1, i2 = c[j]
+                if i2-1 >= 0:
+                    if not neigs[i1, i2-1]:
+                        neigs[i1, i2-1] = neig_num
+                        c += [(i1, i2-1)]
+                if i2+1 < M:
+                    if not neigs[i1, i2+1]:
+                        neigs[i1, i2+1] = neig_num
+                        c += [(i1, i2+1)]
+                if i1-1 >= 0:
+                    if not neigs[i1-1, i2]:
+                        neigs[i1-1, i2] = neig_num
+                        c += [(i1-1, i2)]
+                if i1+1 < N:
+                    if not neigs[i1+1, i2]:
+                        neigs[i1+1, i2] = neig_num
+                        c += [(i1+1, i2)]
+    
+            elif connectivity==8:
+                i1, i2 = c[j]
+                for y_chng in [-1,0,1]:
+                    for x_chng in [-1,0,1]:
+                        if i1+y_chng >= 0 and i1+y_chng < M:
+                            if i2+x_chng >= 0 and i2+x_chng < N:
+                                if not neigs[i1+y_chng, i2+x_chng]:
+                                    neigs[i1+y_chng, i2+x_chng] = neig_num
+                                    c += [(i1+y_chng, i2+x_chng)]
+    
+    for loc in og_c:
+        neigs[loc] = 0
+        
+    return neigs
+
+# This function is required for the LULU median smoother function
+def find_neighbours(c, nmax, N, M, connectivity=4):
+    """
+    Function to get the neoghbour hood of a set of pixels in an image. This function
+    makes use of 1-connectivity.
+
+    Args:
+        c: Set of pixels which neighbourhood needs to be determined
+        nmax: Maximum number of neighbours of each element in each direction
+        N: Height of the image
+        M: Width of the image
+    Returns:
+        Smoothed image
+    """
+    w = []
+    for i in range(nmax):
+        for j in range(len(c)):
+            if connectivity==4:
+                i1, i2 = c[j]
+                if i2-1 >= 0:
+                    w.append((i1, i2-1))
+                if i2+1 < M:
+                    w.append((i1, i2+1))
+                if i1-1 >= 0:
+                    w.append((i1-1, i2))
+                if i1+1 < N:
+                    w.append((i1+1, i2))
+            elif connectivity==8:
+                i1, i2 = c[j]
+                for y_chng in [-1,0,1]:
+                    for x_chng in [-1,0,1]:
+                        if i1+y_chng >= 0 and i1+y_chng < M:
+                            if i2+x_chng >= 0 and i2+x_chng < N:
+                                w.append((i1+y_chng, i2+x_chng))
+            
+        
+        c = [a for a in pd.unique(c+w)]
+    return c
+                
+
+
