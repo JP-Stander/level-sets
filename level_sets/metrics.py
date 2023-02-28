@@ -2,6 +2,142 @@ import cv2
 import numpy as np
 from skimage import measure
 from skimage.feature import greycomatrix, greycoprops
+from .utils import cut_level_set
+
+# metrics for level-sets
+def compactness(level_set):
+    #This functions calculates the compactness of all the pulses in an image, it takes as
+    #input the images with all the pulses and call the rest of the functions by its self 
+    #so it is not neccesary to call any other functions
+
+    #Making sure the image is a numpy array
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set)
+    perimtr = perimeter(level_set)
+    area = sum(sum(level_set))
+    compactness = 2*np.sqrt(np.pi*area)/perimtr
+    return compactness
+
+def elongation(level_set):
+    #This functions calculates the elongatin of all the pulses in an image, it takes as
+    #input the images with all the pulses and call the rest of the functions by its self 
+    #so it is not neccesary to call any other functions
+
+    #Making sure the level-set is a numpy array
+    level_set = np.array(level_set)  
+
+    level_set = cut_level_set(level_set)
+    lenght_2 = get_major(level_set)
+    area = sum(sum(level_set))
+    elongation = area/lenght_2
+    
+    return elongation
+
+def area(level_set):
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set)
+    area = sum(sum(level_set))
+    return area
+
+def perimeter(level_set):
+    perimeter = 0
+    
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set)
+    level_set = (level_set != 0).astype(int)
+    #Add a buffer of zeros so that the filter can be used on the edge of the pulse
+    level_set = np.pad(level_set, pad_width=1, mode='constant', constant_values=0)
+    r, c = level_set.shape
+    #Filter to find 1-connectivity neighbhours
+    filter = np.array([
+        [0, 1, 0],
+        [1, 0, 1],
+        [0, 1, 0]
+        ])
+    #Because matrix consists of 1s and 0s it can be used as True of False when using if
+    for i in range(0, r): 
+        for j in range(0, c): 
+            if (level_set[i][j]): 
+              #The perimeter is 4 minus the number of 1-connectivity neighbhours
+               perimeter += 4 - sum(sum((level_set[i-1:i+2, j-1:j+2]*filter)))
+    return perimeter
+
+def max_distance(level_set, return_coordinates=False):
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set)
+    points = _pixels_to_points(level_set)
+    max_dist = 0
+    c1_max = None
+    c2_max = None
+    for c1 in points:
+        for c2 in points:
+            dist = sum((c1-c2)**2)
+            if dist > max_dist:
+                max_dist = dist
+                c1_max = c1
+                c2_max = c2
+    if return_coordinates:
+        return max_dist, [c1_max, c2_max]
+    return max_dist
+
+def major_axis(level_set):
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set)
+    
+    length, major_axis_coordinates = max_distance(level_set, return_coordinates=True)
+    
+    incline = (major_axis_coordinates[0][1]-major_axis_coordinates[1][1])
+    incline /= (major_axis_coordinates[0][0]-major_axis_coordinates[1][0])
+    
+    angle = np.arctan(incline)*180/np.pi
+
+    
+    return length, angle, major_axis_coordinates
+    
+def _get_enclosing_circle(level_set):
+    level_set = np.array(level_set)  
+    level_set = cut_level_set(level_set).astype(int)
+    
+    points = _pixels_to_points(level_set)
+    points = np.unique(points*10,axis=0)
+    points = np.array(points,dtype=np.int32)
+    enclosing_circle = cv2.minEnclosingCircle(points)
+    return (enclosing_circle[1]*2/10)**2
+        
+def _pixels_to_points(pixels):
+    '''Returns coordinates of corner of pixels of each border pixel'''
+    pixels = (pixels != 0).astype(int)
+    pixels = np.pad(pixels, pad_width=1, mode='constant', constant_values=0)
+    locs = np.where(pixels==1)
+    locs = np.concatenate((pixels.shape[0]-locs[0].reshape(-1,1),locs[1].reshape(-1,1)),axis=1)
+    
+    filter = np.array([
+        [0, 1, 0],
+        [1, 0, 1],
+        [0, 1, 0]
+        ])
+    
+    points=[[],[]]
+    for i in range(locs.shape[0]):
+        neighbourhood = pixels[locs[i][0]-2:locs[i][0]+2, 
+                               locs[i][1]-1:locs[i][1]+2
+                               ]
+        if sum((filter*neighbourhood==1).flatten())==4:
+            continue
+        points[0].append(locs[i,0]+0.5)
+        points[0].append(locs[i,0]-0.5)
+        points[0].append(locs[i,0]+0.5)
+        points[0].append(locs[i,0]-0.5)
+            
+        points[1].append(locs[i,1]+0.5)
+        points[1].append(locs[i,1]+0.5)
+        points[1].append(locs[i,1]-0.5)
+        points[1].append(locs[i,1]-0.5)
+    
+    return np.array(points).transpose()
+    
+
+
 
 #Gray-level co-occurence matrices
 class GLCM:
@@ -41,80 +177,6 @@ class GLCM:
 
 #To view points
 #plt.scatter(locs[:,1],locs[:,0])
-def _pixels_to_points(pixels):
-    '''Returns coordinates of corner of pixels of each border pixel'''
-    pixels = (pixels != 0).astype(int)
-    pixels = np.pad(pixels, pad_width=1, mode='constant', constant_values=0)
-    locs = np.where(pixels==1)
-    locs = np.concatenate((pixels.shape[0]-locs[0].reshape(-1,1),locs[1].reshape(-1,1)),axis=1)
-    
-    points=[[],[]]
-    for i in range(locs.shape[0]):
-        neighbourhood = pixels[locs[0][0]-1:locs[0][0]+2,locs[0][1]-1:locs[0][1]+2]
-        if sum((filter*neighbourhood==1).flatten())==4:
-            continue
-        points[0].append(locs[i,0]+0.5)
-        points[0].append(locs[i,0]-0.5)
-        points[0].append(locs[i,0]+0.5)
-        points[0].append(locs[i,0]-0.5)
-            
-        points[1].append(locs[i,1]+0.5)
-        points[1].append(locs[i,1]+0.5)
-        points[1].append(locs[i,1]-0.5)
-        points[1].append(locs[i,1]-0.5)
-    
-    return np.array(points).transpose()
-    
-def max_distance(pulses, ignore_0=True):
-    pulses = np.array(pulses)
-    level_sets = measure.label(pulses,connectivity=1)
-    unique_level_sets = np.unique(level_sets).tolist()
-    if ignore_0:
-        level_set_0 = level_sets[pulses==0]
-        unique_level_sets.remove(level_set_0[0])
-    distances = {}
-    for level_set in unique_level_sets:
-        pulse = pulses * (pulses==level_set)
-        points = _pixels_to_points(pulse)
-        dist = 0
-        for c1 in points:
-            for c2 in points:
-                dist1 = sum((c1-c2)**2)
-                dist = dist1 if dist1 > dist else dist
-        distances[level_set] = dist
-    return distances
-                
-def _find_perimeter(pulse): 
-    perimeter = 0
-    pulse = (pulse != 0).astype(int)
-    #Add a buffer of zeros so that the filter can be used on the edge of the pulse
-    pulse = np.pad(pulse, pad_width=1, mode='constant', constant_values=0)
-    r,c = pulse.shape
-    #Filter to find 1-connectivity neighbhours
-    filter = np.array([[0, 1, 0],
-                      [1, 0, 1],
-                      [0, 1, 0]])
-    #Because matrix consists of 1s and 0s it can be used as True of False when using if
-    for i in range(0, r): 
-        for j in range(0, c): 
-            if (pulse[i][j]): 
-              #The perimeter is 4 minus the number of 1-connectivity neighbhours
-               perimeter += 4 - sum(sum((pulse[i-1:i+2,j-1:j+2]*filter)))
-    return perimeter
-                   
-def perimeter(pulses, ignore_0=True):
-    pulses = np.array(pulses)
-    level_sets = measure.label(pulses,connectivity=1)
-    unique_level_sets = np.unique(level_sets).tolist()
-    if ignore_0:
-        level_set_0 = level_sets[pulses==0]
-        unique_level_sets.remove(level_set_0[0])
-    perimeters = {}
-    for level_set in unique_level_sets:
-        pulse = pulses * (pulses==level_set)
-        perimeters[level_set] = _find_perimeter(pulse)
-    
-    return perimeters
 
 def _get_major_axis(pulse):
     points = _pixels_to_points(pulse)
@@ -168,8 +230,33 @@ def major_axis(pulses, ignore_0=True, return_length=True,
             output['angles'] = angles
         
     return output
+  
+def get_major(img):
+    locs = np.where(img==1)
+    locs = np.concatenate((locs[0].reshape(-1,1),locs[1].reshape(-1,1)),axis=1)
+
+    pnts=[[],[]]
+    for i in range(locs.shape[0]):
+        pnts[0].append(locs[i, 0]+0.5)
+        pnts[0].append(locs[i, 0]-0.5)
+        pnts[0].append(locs[i, 0]+0.5)
+        pnts[0].append(locs[i, 0]-0.5)
+
+        pnts[1].append(locs[i, 1]+0.5)
+        pnts[1].append(locs[i, 1]+0.5)
+        pnts[1].append(locs[i, 1]-0.5)
+        pnts[1].append(locs[i, 1]-0.5)
+
+    pnts = np.array(pnts).transpose()
+    pnts = np.unique(pnts*10, axis=0)
+    pnts = np.array(pnts, dtype=np.int32)
+    res = cv2.minEnclosingCircle(pnts)
+    return (res[1]*2/10)**2
+
+
     
-cv2.fitEllipse()
+
+# cv2.fitEllipse()
 def convex_hull(pulses):
     pulses = np.array(pulses)
     level_sets = measure.label(pulses,connectivity=1)

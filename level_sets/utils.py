@@ -1,6 +1,8 @@
 import numpy as np
 import pandas as pd
 from skimage import measure
+import matplotlib.image as mpimg
+from sklearn.metrics.pairwise import distance_metrics
 
 # Used for testing
 # from skimage import io, color, img_as_ubyte
@@ -15,10 +17,33 @@ from skimage import measure
 #        [0,0,1,1,1],
 #        [2,2,0,0,0],
 #        [0,2,0,0,0]]
+
+def load_image(file):
+    img = mpimg.imread(file)
+    return img
     
 def get_level_sets(img, connectivity=1):
-    level_sets = measure.label(img+1,connectivity=1)
+    level_sets = measure.label(img, 
+                               background=-1, 
+                               connectivity=connectivity
+                               )
     return level_sets
+
+def cut_level_set(img):
+    img = np.array(img)
+    #Making sure the image is binarized
+    img = (img != 0).astype(int)
+    n, m = img.shape
+    #Getting the first and last non zeros pixel over columns and rows
+    min_r = max(np.where(img> 0)[0].min(), 0)
+    max_r = min(np.where(img> 0)[0].max()+1, n)
+    min_c = max(np.where(img> 0)[1].min(), 0)
+    max_c = min(np.where(img> 0)[1].max()+1, m)
+    
+    #Croppping the image
+    img = img[min_r:max_r, min_c:max_c]
+    
+    return img
 
 def number_neighbours(c, nmax, N, M, connectivity):
     neig_num = 0
@@ -60,6 +85,22 @@ def number_neighbours(c, nmax, N, M, connectivity):
         neigs[loc] = 0
         
     return neigs
+
+def spatio_environ_dependence(point_a, point_b, dist_type_a='l2', dist_type_b='l1', alpha=0.5):
+    assert dist_type_a in distance_metrics().keys(), f"{dist_type_a} is an invalid distance type for argument dist_type_a. The options are\n{list(distance_metrics().keys())}"
+    assert dist_type_b in distance_metrics().keys(), f"{dist_type_b} is an invalid distance type for argument dist_type_b. The options are\n{list(distance_metrics().keys())}"
+
+    u_s = _dist(point_a[0:2], point_b[0:2], dist_type_a)
+    u_e = _dist(point_a[2:], point_b[2:], dist_type_b)
+    
+    m = np.exp(-(alpha*u_e + (1-alpha)*u_s))
+    return m
+    
+def _dist(point_a, point_b, dist_type):
+    point_a = np.array(point_a).reshape(1,- 1)
+    point_b = np.array(point_b).reshape(1,- 1)
+    distance = distance_metrics()[dist_type](point_a, point_b)
+    return distance
 
 # This function is required for the LULU median smoother function
 def find_neighbours(c, nmax, N, M, connectivity=4):
