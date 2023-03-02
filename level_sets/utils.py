@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 from skimage import measure
 from PIL import Image
-import matplotlib.image as mpimg
 from sklearn.metrics.pairwise import distance_metrics
 
 # Used for testing
