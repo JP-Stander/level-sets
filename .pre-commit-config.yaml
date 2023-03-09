@@ -1,0 +1,13 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
+repos:
+  - repo: https://github.com/pycqa/flake8
+    rev: "6.0.0"
+    hooks:
+      - id: flake8
+  - repo: https://github.com/lorenzwalthert/precommit
+    rev: "v0.3.2"
+    hooks:
+      - id: lintr
+      - id: style-files
+        args: [--style_pkg=styler, --style_fun=tidyverse_style, --cache-root=styler-perm]
