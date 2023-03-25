@@ -11,6 +11,7 @@ def load_image(file):
     return img
 
 
+# TODO: Fix complexity
 def levelset_median_smoother(image, pmax=3, nmax=2, pmin=1, method='median', connectivity=8,  # noqa: C901
                              keep_else=True, parallel=False):
     """

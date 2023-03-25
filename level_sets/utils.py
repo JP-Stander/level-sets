@@ -57,6 +57,7 @@ def cut_level_set(img):
     return img
 
 
+# TODO: Fix complexity
 def number_neighbours(c, nmax, N, M, connectivity):  # noqa: C901
     neig_num = 0
     neigs = np.zeros((N, M))
@@ -125,6 +126,7 @@ def _dist(point_a, point_b, dist_type):
     return distance
 
 
+# TODO: Fix complexity
 # This function is required for the LULU median smoother function
 def find_neighbours(c, nmax, N, M, connectivity=4):  # noqa: C901
     """
