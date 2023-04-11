@@ -13,12 +13,12 @@ from graphical_model.utils import graphical_model, calculate_graph_attributes
 
 # import os
 # os.chdir(r"/home/qxz1djt/projects/phd/level-sets")
-img = load_image("../mnist/img_45.jpg", [10, 10])
+img = load_image("../mnist/img_45.jpg")
 
 gm = graphical_model(
     img,
     True,
-    0.5,
+    0.8,
     True
 )
 # %%
@@ -42,9 +42,9 @@ for i in range(spp.shape[0]):
 layout = [(x, y) for x, y in zip(g.vs['x-coor'], g.vs['y-coor'])]
 ig.plot(
     g,
-    vertex_size=5,
+    vertex_size=15,
     vertex_color=[(i, i, i) for i in g.vs['intensity']],
-    layout=layout,
+    # layout=layout,
     # vertex_frame_color='black',
     # vertex_frame_width=2,
 )
@@ -91,9 +91,8 @@ for image in tqdm(images):
     graph_attr_pd['label'] = image.split('/')[-2]
     dataframe = pd.concat([dataframe, graph_attr_pd], ignore_index=True)
 
-# %%
-
 dataframe = dataframe.dropna(axis=1, how='all')
+dataframe.to_csv("RectData.csv")
 X = dataframe.drop('label', axis=1)
 y = dataframe['label']
 
@@ -109,3 +108,5 @@ clf.fit(X_train, y_train)
 # evaluate the classifier on the test data
 accuracy = clf.score(X_test, y_test)
 print("Accuracy on test set:", accuracy)
+
+# %%

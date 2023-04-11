@@ -1,4 +1,5 @@
 # %%
+import igraph as ig
 import numpy as np
 import pandas as pd
 from level_sets.metrics import compactness, elongation
@@ -155,3 +156,21 @@ def resize_graph(graph, n):  # noqa: C901
             g2.delete_vertices(max_n_node)
             g = g2.copy()
     return g
+
+
+def find_graphlets(g, k):
+    subgraphs = ig.GraphBase.get_subisomorphisms_vf2(g, ig.GraphBase(k, directed=False))
+
+    # count the occurrences of each subgraph in the original graph
+    graphlet_counts = [0] * len(subgraphs)
+    for i in range(g.vcount()):
+        for j in range(i + 1, g.vcount()):
+            subgraph = g.subgraph([i, j])
+            if subgraph.ecount() == k:
+                for idx, sg in enumerate(subgraphs):
+                    if subgraph.isomorphic(sg):
+                        graphlet_counts[idx] += 1
+
+    # print the resulting counts for each subgraph
+    for idx, sg in enumerate(subgraphs):
+        print("Graphlet {}: {}".format(idx, graphlet_counts[idx]))

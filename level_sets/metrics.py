@@ -7,6 +7,14 @@ from .utils import cut_level_set
 
 
 def compactness(level_set):
+    """_summary_
+
+    Args:
+        level_set (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     # This functions calculates the compactness of all the pulses in an image, it takes as
     # input the images with all the pulses and call the rest of the functions by its self
     # so it is not neccesary to call any other functions
