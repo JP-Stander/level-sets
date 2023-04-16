@@ -1,19 +1,20 @@
-# Begin Exclude Linting
-# Sys.setenv(RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python")
-# End Exclude Linting
+Sys.setenv(
+  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
+)
+
 library(reticulate)
 library(igraph)
 py_config()
-# setwd(paste0(getwd(), "/level-sets"))
+setwd(paste0(getwd(), "/level-sets"))
 
-for(pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python")){
-  py_install(pkg)  
-}
+# for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python")) {
+#   py_install(pkg)
+# }
 
 source_python("level_sets/utils.py")
 source_python("graphical_model/utils.py")
 source("graphical_model/utils.R")
-img <- load_image("data/img_16.jpg") # , list(10,10))
+img <- load_image("data/img_16.jpg") # , list(10, 10))
 
 gm <- graphical_model(
   img,
@@ -52,21 +53,21 @@ plot(
 
 graphlets <- graphlet_basis(g)
 g <- set.vertex.attribute(g, "n_graphlets", index = V(g), 0)
-for (c in 1:length(graphlets$cliques)){
+for (c in seq_along(graphlets$cliques)) {
   g <- set.vertex.attribute(g, "color_code_gl", index = graphlets$cliques[[c]], c)
   V(g)[graphlets$cliques[[c]]]$n_graphlets <- V(g)[graphlets$cliques[[c]]]$n_graphlets + 1
 }
 
-cliquess <- cliques(g)# graphlet_basis(g)
+cliquess <- cliques(g) # graphlet_basis(g)
 g <- set.vertex.attribute(g, "n_cliques", index = V(g), 0)
-for (c in 1:length(cliquess)){
+for (c in seq_along(cliquess)) {
   g <- set.vertex.attribute(g, "color_code_cl", index = cliquess[[c]], c)
   V(g)[cliquess[[c]]]$n_cliques <- V(g)[cliquess[[c]]]$n_cliques + 1
 }
 
 plot(
   g,
-  vertex.size = ceiling(V(g)$n_graphlets/20),
+  vertex.size = ceiling(V(g)$n_graphlets / 20),
   # vertex.size = ceiling(V(g)$n_cliques),
   # vertex.color = V(g)$color_code_gl,
   vertex.color = gray(V(g)$intensity),
@@ -78,7 +79,7 @@ plot(
 plot(
   g,
   # vertex.size = ceiling(V(g)$n_graphlets),
-  vertex.size = ceiling(V(g)$n_cliques/500),
+  vertex.size = ceiling(V(g)$n_cliques / 500),
   # vertex.color = V(g)$color_code_gl,
   # vertex.color = V(g)$color_code_cl,
   vertex.color = gray(V(g)$intensity),
