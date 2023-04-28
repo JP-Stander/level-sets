@@ -10,8 +10,25 @@ rotate <- function(df, degree) {
   return(dfr)
 }
 
-get_graphlet_num <- function(graphlet_adj, ref_adj) {
-
+get_graphlet_num <- function(graphlet_adj) {
+  # source("reference_graphlets")
+  graphlet_adj = graphlet_adj*1
+  clique_size = dim(graphlet_adj)[1]
+  reference_cliques = reference.cliques[[paste0("g", clique_size, sep="")]]
+  for(clique_name in names(reference_cliques)){
+    cliq_adj = reference_cliques[[clique_name]]
+    num_matching_cols = 0
+    for(graphlet_colnum in 1:dim(graphlet_adj)[1]){
+      col_sums = colSums(graphlet_adj[,graphlet_colnum]==cliq_adj)
+      if(max(col_sums) == clique_size){
+        num_matching_cols = num_matching_cols + 1
+      }
+    }
+    if(num_matching_cols == clique_size){
+      return(clique_name)
+    }
+  }
+  return("No matching graphlet")
 }
 
 # graph_metrics <- function(g) {
