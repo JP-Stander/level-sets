@@ -4,6 +4,7 @@ Sys.setenv(
 
 library(reticulate)
 library(igraph)
+library(stringr)
 py_config()
 setwd(paste0(getwd(), "/level-sets"))
 
@@ -14,6 +15,7 @@ setwd(paste0(getwd(), "/level-sets"))
 source_python("level_sets/utils.py")
 source_python("graphical_model/utils.py")
 source("graphical_model/utils.R")
+source("graphical_model/reference_graphs.R")
 img <- load_image("data/img_16.jpg") # , list(10, 10))
 
 gm <- graphical_model(
@@ -52,6 +54,22 @@ plot(
 )
 
 graphlets <- graphlet_basis(g)
+col_names <- list()
+for (n in c(2, 3, 4, 5)) {
+  for (name in names(eval(parse(text = paste("cliques.size.", n, sep = ""))))) {
+    col_names <- append(col_names, str_replace(name, "g", paste("g", n, "_", sep = "")))
+  }
+}
+rect_data <- setNames(data.frame(matrix(ncol = length(col_names), nrow = 0)), col_names)
+
+for (n in c(2, 3, 4, 5)) {
+  cliques_size_n <- Filter(function(x) length(x) == n, graphlets$cliques)
+  for (cliq in cliques_size_n) {
+    cliq_adj <- binary_edges[cliq, cliq]
+    graplet <- get_graphlet_num(cliq_adj, cliques_size_n)
+    rect_data[1, graplet] <- rect_data[1, graplet] + 1
+  }
+}
 g <- set.vertex.attribute(g, "n_graphlets", index = V(g), 0)
 for (c in seq_along(graphlets$cliques)) {
   g <- set.vertex.attribute(g, "color_code_gl", index = graphlets$cliques[[c]], c)

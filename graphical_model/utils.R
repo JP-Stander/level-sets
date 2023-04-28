@@ -10,6 +10,10 @@ rotate <- function(df, degree) {
   return(dfr)
 }
 
+get_graphlet_num <- function(graphlet_adj, ref_adj) {
+
+}
+
 # graph_metrics <- function(g) {
 #   V(g)$degree <- degree(g)
 #   metrics <- data.frame(
