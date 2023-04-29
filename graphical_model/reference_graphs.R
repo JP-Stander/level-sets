@@ -14,7 +14,7 @@ reference.cliques <- list(
     g4_5 = matrix(c(0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0), ncol = 4, byrow = TRUE),
     g4_6 = matrix(c(0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0), ncol = 4, byrow = TRUE)
   ),
-  g5 <- list(
+  g5 = list(
     g5_1  = matrix(c(0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0), ncol = 5, byrow = TRUE),
     g5_2  = matrix(c(0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0), ncol = 5, byrow = TRUE),
     g5_3  = matrix(c(0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0), ncol = 5, byrow = TRUE),
