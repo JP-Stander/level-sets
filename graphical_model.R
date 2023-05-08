@@ -1,31 +1,32 @@
-Sys.setenv(
-  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
-)
+#Sys.setenv(
+#  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
+#)
 
 library(reticulate)
 library(igraph)
 library(stringr)
 library(rlist)
+library(ScreenClean)
 py_config()
-setwd(paste0(getwd(), "/level-sets"))
+#setwd(paste0(getwd(), "/level-sets"))
 
-# for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python")) {
-#   py_install(pkg)
-# }
+for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python", "igraph")) {
+  py_install(pkg)
+}
 
 source_python("level_sets/utils.py")
 source_python("graphical_model/utils.py")
 source("graphical_model/utils.R")
 source("graphical_model/reference_graphs.R")
 
-images = list.files("../mnist/", pattern="*.jpg")
+images = list.files("data/", pattern="*.jpg")
 
 col_names = unlist(lapply(names(reference.cliques), function(x){names(reference.cliques[[x]])}))
 rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names), nrow = length(images))), col_names)
 
 for(i in 1:length(images)){
 
-  img <- load_image(paste0("../mnist/", images[i], sep=""), list(10, 10))
+  img <- load_image(paste0("data/", images[i], sep=""), list(10, 10))
   gm <- graphical_model(
     img,
     TRUE,
@@ -64,12 +65,17 @@ for(i in 1:length(images)){
   break
   graphlets <- graphlet_basis(g)
   all_cliques <- cliques(g)
+  subgraphs <- FindAllCG(binary_edges, 4)
 #
   # for(clique in Filter(function(x) length(x) %in% c(5), graphlets$cliques)){
-  for(clique in Filter(function(x) length(x) %in% c(2,3,4,5), all_cliques)){
-    if(!all(colSums(binary_edges[clique, clique]) > 0)) next  
-    clique_name = get_graphlet_num(binary_edges[clique, clique])
-    rect_data[i, clique_name] = rect_data[i, clique_name] + 1
+  for(k in 2:length(subgraphs)){
+    subgraph = subgraphs[[k]]
+    for(j in 1:dim(subgraph)[1]){
+      clique = subgraph[j,]
+      if(!all(colSums(binary_edges[clique, clique]) > 0)) next  
+      clique_name = get_graphlet_num(binary_edges[clique, clique])
+      rect_data[i, clique_name] = rect_data[i, clique_name] + 1
+    }
   }
 }
 

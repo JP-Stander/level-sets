@@ -3,8 +3,15 @@ reference.cliques <- list(
     g2_1 = matrix(c(0, 1, 1, 0), ncol = 2, byrow = TRUE)
   ),
   g3 = list(
-    g3_1 = matrix(c(0, 1, 1, 1, 0, 1, 1, 1, 0), ncol = 3, byrow = TRUE),
-    g3_2 = matrix(c(0, 1, 0, 1, 0, 1, 0, 1, 0), ncol = 3, byrow = TRUE)
+    g3_1 = matrix(c(0, 1, 1, 
+                    1, 0, 1, 
+                    1, 1, 0), ncol = 3, byrow = TRUE),
+    g3_2 = matrix(c(0, 1, 0, 
+                    1, 0, 1, 
+                    0, 1, 0), ncol = 3, byrow = TRUE),
+    g3_2 = matrix(c(0, 1, 1, 
+                    1, 0, 0, 
+                    1, 0, 0), ncol = 3, byrow = TRUE)
   ),
   g4 = list(
     g4_1 = matrix(c(0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 1, 0), ncol = 4, byrow = TRUE),
