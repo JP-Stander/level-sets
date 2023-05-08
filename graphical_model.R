@@ -25,7 +25,7 @@ rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names), nrow = leng
 
 for(i in 1:length(images)){
 
-  img <- load_image(paste0("../mnist/", images[i], sep=""))#, list(10, 10))
+  img <- load_image(paste0("../mnist/", images[i], sep=""), list(10, 10))
   gm <- graphical_model(
     img,
     TRUE,
@@ -44,6 +44,7 @@ for(i in 1:length(images)){
   # binary_edges <- binary_edges[keep_idx, keep_idx]
 
   edges_matrix_cut <- (binary_edges) * edges_matrix
+  sparse_adjacency <- as(edges_matrix_cut, "sparseMatrix")
 
   g <- graph.adjacency(edges_matrix_cut, weighted = TRUE, mode = "undirected")
   g <- set_vertex_attr(g, "intensity", index = V(g), spp[[1]][, 4])
@@ -60,6 +61,7 @@ for(i in 1:length(images)){
   #   vertex.color = gray(V(g)$intensity),
   #   layout = cbind(V(g)$x_coordinate, V(g)$y_coordinate)
   # )
+  break
   graphlets <- graphlet_basis(g)
   all_cliques <- cliques(g)
 #

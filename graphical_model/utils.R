@@ -48,3 +48,55 @@ get_graphlet_num <- function(graphlet_adj) {
 #   )
 #   return(metrics)
 # }
+ms <- 2
+adjacency <- (binary_edges != 0)*1
+idx_keep <- colSums(binary_edges)>0
+adjacency <- adjacency[idx_keep, idx_keep]
+sg <- list(
+  "1" <- list(),
+  "2" <- list()
+  )
+
+return_next_nodes <- function(adj, n){
+  column = adj[n, ]
+  return(which(column == 1))
+}
+
+for(n in 1:dim(adjacency)[1]){
+  
+  adjacency_loop = adjacency[n:dim(adjacency)[1], n:dim(adjacency)[1]]
+  next_nodes = return_next_nodes(adjacency_loop, n)
+  sg_n = list(rep(n, length(next_nodes)))
+}
+
+find_routes <- function(matrix, n, start_node, current_node, route, visited, routes=0) {
+  if(routes==0){
+    routes <- lapply(1:n, function(i) list())
+  }
+  route_len <- length(route)
+  if (route_len <= n) {
+    # Print the complete route
+    routes[[route_len]] = append(routes[[route_len]], route)
+    # cat("Route:", paste(route, collapse = " -> "), "\n")
+  } else {
+    for (next_node in 1:nrow(matrix)) {
+      if (matrix[current_node, next_node] == 1 && !next_node %in% visited) {
+        # Move to the next node and continue the route
+        find_routes(matrix, n, start_node, next_node, c(route, next_node), c(visited, next_node), routes)
+        
+        # Break the loop if we have reached the starting node
+        if (next_node == start_node)
+          next
+      }
+    }
+  }
+  return(routes)
+}
+
+adjacency_matrix <- matrix(c(0, 1, 1, 0, 0,
+                            1, 0, 1, 1, 0,
+                            1, 1, 0, 0, 1,
+                            0, 1, 0, 0, 1,
+                            0, 0, 1, 1, 0), nrow = 5, ncol = 5)
+
+plot(graph.adjacency(adjacency_matrix, weighted = TRUE, mode = "undirected"))
