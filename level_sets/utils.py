@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from PIL import Image
 from skimage import measure
 from sklearn.metrics.pairwise import distance_metrics
 
@@ -19,22 +18,13 @@ from sklearn.metrics.pairwise import distance_metrics
 #        [0,2,0,0,0]]
 
 
-def load_image(file, new_size=None):
-
-    img = Image.open(file)
-    if new_size:
-        new_size = tuple(int(el) for el in new_size)
-        img = img.resize(new_size)
-
-    return np.array(img)
-
-
 def get_level_sets(img, connectivity=1):
 
-    level_sets = measure.label(img,
-                               background=-1,
-                               connectivity=connectivity
-                               )
+    level_sets = measure.label(
+        img,
+        background=-1,
+        connectivity=connectivity
+    )
 
     return level_sets
 

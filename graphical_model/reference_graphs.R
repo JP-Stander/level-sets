@@ -9,7 +9,7 @@ reference.cliques <- list(
     g3_2 = matrix(c(0, 1, 0, 
                     1, 0, 1, 
                     0, 1, 0), ncol = 3, byrow = TRUE),
-    g3_2 = matrix(c(0, 1, 1, 
+    g3_3 = matrix(c(0, 1, 1, 
                     1, 0, 0, 
                     1, 0, 0), ncol = 3, byrow = TRUE)
   ),

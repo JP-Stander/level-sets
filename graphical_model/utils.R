@@ -1,4 +1,5 @@
 library(igraph)
+library(combinat)
 
 rotate <- function(df, degree) {
   dfr <- df
@@ -51,47 +52,38 @@ get_graphlet_num <- function(graphlet_adj_ref) {
 #   )
 #   return(metrics)
 # }
-ms <- 2
-adjacency <- (binary_edges != 0)*1
-idx_keep <- colSums(binary_edges)>0
-adjacency <- adjacency[idx_keep, idx_keep]
-sg <- list(
-  "1" <- list(),
-  "2" <- list()
-  )
 
-return_next_nodes <- function(adj, n){
-  column = adj[n, ]
-  return(which(column == 1))
-}
 
-for(n in 1:dim(adjacency)[1]){
-  
-  adjacency_loop = adjacency[n:dim(adjacency)[1], n:dim(adjacency)[1]]
-  next_nodes = return_next_nodes(adjacency_loop, n)
-  sg_n = list(rep(n, length(next_nodes)))
-}
-
-find_routes <- function(matrix, n, start_node, current_node, route, visited, routes=0) {
-  if(routes==0){
-    routes <- lapply(1:n, function(i) list())
-  }
+get_graphlets <- function(adjacency, n, current_node, route, visited, routes) {
   route_len <- length(route)
-  if (route_len <= n) {
-    # Print the complete route
-    routes[[route_len]] = append(routes[[route_len]], route)
-    # cat("Route:", paste(route, collapse = " -> "), "\n")
-  } else {
-    for (next_node in 1:nrow(matrix)) {
-      if (matrix[current_node, next_node] == 1 && !next_node %in% visited) {
-        # Move to the next node and continue the route
-        find_routes(matrix, n, start_node, next_node, c(route, next_node), c(visited, next_node), routes)
-        
-        # Break the loop if we have reached the starting node
-        if (next_node == start_node)
-          next
-      }
+  if (route_len < n) {
+    new_graphlet = matrix(sort(route), ncol=route_len)
+    if(!any(apply(routes[[route_len]], 1, function(row) identical(row, new_graphlet)))){
+      routes[[route_len]] <- rbind(routes[[route_len]], new_graphlet)
     }
+    next_nodes <- setdiff(which(adjacency[current_node, ]==1), visited)
+    for (next_node in next_nodes) {#[next_nodes>current_node]
+      routes <- get_graphlets(adjacency, n, next_node, c(route, next_node), c(visited, next_node), routes)
+    }
+  } else if (route_len == n) {
+    new_graphlet = matrix(sort(route), ncol=route_len)
+    if(!any(apply(routes[[route_len]], 1, function(row) identical(row, new_graphlet)))){
+      routes[[route_len]] <- rbind(routes[[route_len]], new_graphlet)
+    }
+      return(routes)
+  } else {
+    return(routes)
+  }
+  return(routes)
+}
+
+get_all_graphlets <- function(adjacency_matrix, max_graphlet_size){
+  routes <- lapply(1:max_graphlet_size, function(i) matrix(,nrow=0,ncol=i))
+  for(node in 1:nrow(adjacency_matrix)){
+    routes <- get_graphlets(adjacency_matrix,#[node:nrow(adjacency_matrix), node:ncol(adjacency_matrix)], 
+      max_graphlet_size, 
+      node, node, node, routes
+    )
   }
   return(routes)
 }
@@ -101,5 +93,25 @@ adjacency_matrix <- matrix(c(0, 1, 1, 0, 0,
                             1, 1, 0, 0, 1,
                             0, 1, 0, 0, 1,
                             0, 0, 1, 1, 0), nrow = 5, ncol = 5)
+
+
+
+th <- FindAllCG(adjacency_matrix, 4)
+mn <- get_all_graphlets(adjacency_matrix, 4)
+microbenchmark(
+  FindAllCG(adjacency_matrix, 4),
+  get_all_graphlets(adjacency_matrix, 4)
+)
+matrix=adjacency_matrix
+n=3
+start_node=1
+current_node=1
+route=1
+visited=1
+routes=0
+
+current_node=next_node
+route=c(route, next_node)
+visited=c(visited, next_node)
 
 plot(graph.adjacency(adjacency_matrix, weighted = TRUE, mode = "undirected"))

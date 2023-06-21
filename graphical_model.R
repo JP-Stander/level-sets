@@ -1,18 +1,19 @@
-#Sys.setenv(
-#  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
-#)
+Sys.setenv(
+  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
+)
 
 library(reticulate)
 library(igraph)
 library(stringr)
 library(rlist)
+library(Matrix)
 library(ScreenClean)
 py_config()
-#setwd(paste0(getwd(), "/level-sets"))
+setwd(paste0(getwd(), "/level-sets"))
 
-for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python", "igraph")) {
-  py_install(pkg)
-}
+# for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python", "igraph")) {
+#   py_install(pkg)
+# }
 
 source_python("level_sets/utils.py")
 source_python("graphical_model/utils.py")
@@ -22,8 +23,10 @@ source("graphical_model/reference_graphs.R")
 images = list.files("data/", pattern="*.jpg")
 
 col_names = unlist(lapply(names(reference.cliques), function(x){names(reference.cliques[[x]])}))
+col_names = col_names[!startsWith(col_names, "g5")]
 rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names), nrow = length(images))), col_names)
 
+start.time <- Sys.time()
 for(i in 1:length(images)){
 
   img <- load_image(paste0("data/", images[i], sep=""), list(10, 10))
@@ -35,7 +38,7 @@ for(i in 1:length(images)){
   )
   nodes <- gm[1]
   edges <- gm[2]
-  spp <- gm[3]
+  # spp <- gm[3]
 
   edges_matrix <- matrix(unlist(edges), ncol = dim(nodes[[1]])[1], byrow = TRUE)
   binary_edges <- edges_matrix > 0.5
@@ -44,17 +47,17 @@ for(i in 1:length(images)){
   # edges_matrix <- edges_matrix[keep_idx, keep_idx]
   # binary_edges <- binary_edges[keep_idx, keep_idx]
 
-  edges_matrix_cut <- (binary_edges) * edges_matrix
-  sparse_adjacency <- as(edges_matrix_cut, "sparseMatrix")
+  # edges_matrix_cut <- (binary_edges) * edges_matrix
+  # sparse_adjacency <- as(edges_matrix_cut, "sparseMatrix")
 
-  g <- graph.adjacency(edges_matrix_cut, weighted = TRUE, mode = "undirected")
-  g <- set_vertex_attr(g, "intensity", index = V(g), spp[[1]][, 4])
+  # g <- graph.adjacency(edges_matrix_cut, weighted = TRUE, mode = "undirected")
+  # g <- set_vertex_attr(g, "intensity", index = V(g), spp[[1]][, 4])
 
-  coordinates <- as.matrix(rotate(as.data.frame(spp[[1]][, 2:3]), 90))
-  coordinates[is.nan(coordinates)] <- 0
+  # coordinates <- as.matrix(rotate(as.data.frame(spp[[1]][, 2:3]), 90))
+  # coordinates[is.nan(coordinates)] <- 0
 
-  g <- set.vertex.attribute(g, "x_coordinate", index = V(g), coordinates[, 1])
-  g <- set.vertex.attribute(g, "y_coordinate", index = V(g), coordinates[, 2])
+  # g <- set.vertex.attribute(g, "x_coordinate", index = V(g), coordinates[, 1])
+  # g <- set.vertex.attribute(g, "y_coordinate", index = V(g), coordinates[, 2])
 
   # plot(
   #   g,
@@ -62,24 +65,33 @@ for(i in 1:length(images)){
   #   vertex.color = gray(V(g)$intensity),
   #   layout = cbind(V(g)$x_coordinate, V(g)$y_coordinate)
   # )
-  break
-  graphlets <- graphlet_basis(g)
-  all_cliques <- cliques(g)
-  subgraphs <- FindAllCG(binary_edges, 4)
+  # break
+  # graphlets <- graphlet_basis(g)
+  # all_cliques <- cliques(g)
+  subgraphs <- FindAllCG(Matrix(binary_edges, sparse = TRUE), 4)
 #
   # for(clique in Filter(function(x) length(x) %in% c(5), graphlets$cliques)){
   for(k in 2:length(subgraphs)){
     subgraph = subgraphs[[k]]
     for(j in 1:dim(subgraph)[1]){
       clique = subgraph[j,]
-      if(!all(colSums(binary_edges[clique, clique]) > 0)) next  
+      # if(!all(colSums(binary_edges[clique, clique]) > 0)) next  
       clique_name = get_graphlet_num(binary_edges[clique, clique])
       rect_data[i, clique_name] = rect_data[i, clique_name] + 1
     }
   }
 }
 
+end.time <- Sys.time()
+time.taken <- end.time - start.time
+time.taken
 
+library(microbenchmark)
+microbenchmark(
+  a=FindAllCG(Matrix(binary_edges, sparse = TRUE), 4),
+  b=FindAllCG(binary_edges, 4),
+  times=10
+)
 
 # g <- set.vertex.attribute(g, "n_graphlets", index = V(g), 0)
 # for (c in seq_along(graphlets$cliques)) {
