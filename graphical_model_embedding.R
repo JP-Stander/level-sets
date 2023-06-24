@@ -3,10 +3,10 @@ Sys.setenv(
 )
 
 library(reticulate)
-library(igraph)
-library(stringr)
-library(stellaR)
-library(rlist)
+# library(igraph)
+# library(stringr)
+# library(stellaR)
+# library(rlist)
 library(Matrix)
 library(ScreenClean)
 library(node2vec)
@@ -16,18 +16,24 @@ setwd(paste0(getwd(), "/level-sets"))
 # source_python("level_sets/utils.py")
 source_python("images/utils.py")
 source_python("graphical_model/utils.py")
-# source("graphical_model/utils.R")
+source("graphical_model/utils.R")
 source("graphical_model/reference_graphs.R")
 
 images <- paste0("dotted/", list.files("../dtd/images/dotted/", pattern = "*.jpg", recursive = TRUE))
 images <- c(images, paste0("fibrous/", list.files("../dtd/images/fibrous", pattern = "*.jpg", recursive = TRUE)))
 # folders <- dirname(images)
-
+num_images <- 4#length(images)
 col_names <- unlist(lapply(names(reference.cliques), function(x) {
     names(reference.cliques[[x]])
 }))
-col_names <- col_names[!startsWith(col_names, "g5")]
-rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names) + 10, nrow = length(images))), col_names)
+col_names <- c("graph_name", col_names[!startsWith(col_names, "g5")])
+rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names) + 10, nrow = num_images)), col_names)
+subgraphs_coordinates <- data.frame(
+    graph_name = character(0),
+    graphlet_name = character(0),
+    x = numeric(0),
+    y = numeric(0)
+)
 # rotate <- function(x) t(apply(x, 2, rev))
 start_time <- Sys.time()
 for (i in c(1, 239)){ #seq_along(images[1:3])
@@ -35,6 +41,8 @@ for (i in c(1, 239)){ #seq_along(images[1:3])
         paste0("../dtd/images/", images[i], sep = ""),
         list(10, 10)
     )
+    image_name <- tools::file_path_sans_ext(basename(images[i]))
+    rect_data[i, "graph_name"] <- image_name
     # image(img, col=grey.colors(n=255))
     # Get the image dimensions
     # height <- dim(img)[1]
@@ -64,6 +72,7 @@ for (i in c(1, 239)){ #seq_along(images[1:3])
     )
     nodes <- gm[1]
     edges <- gm[2]
+    attr <- gm[3][[1]]
 
     edges_matrix <- matrix(unlist(edges), ncol = dim(nodes[[1]])[1], byrow = TRUE)
     binary_edges <- edges_matrix > 0.5
@@ -76,6 +85,12 @@ for (i in c(1, 239)){ #seq_along(images[1:3])
             clique <- subgraph[j, ]
             clique_name <- get_graphlet_num(binary_edges[clique, clique])
             rect_data[i, clique_name] <- rect_data[i, clique_name] + 1
+
+            subgraphs_coordinates[nrow(subgraphs_coordinates) + 1, ] <- c(
+                image_name,
+                clique_name, 
+                colMeans(attr[clique, c("x-coor", "y-coor")])
+            )
         }
     }
 

@@ -96,22 +96,22 @@ adjacency_matrix <- matrix(c(0, 1, 1, 0, 0,
 
 
 
-th <- FindAllCG(adjacency_matrix, 4)
-mn <- get_all_graphlets(adjacency_matrix, 4)
-microbenchmark(
-  FindAllCG(adjacency_matrix, 4),
-  get_all_graphlets(adjacency_matrix, 4)
-)
-matrix=adjacency_matrix
-n=3
-start_node=1
-current_node=1
-route=1
-visited=1
-routes=0
+# th <- FindAllCG(adjacency_matrix, 4)
+# mn <- get_all_graphlets(adjacency_matrix, 4)
+# microbenchmark(
+#   FindAllCG(adjacency_matrix, 4),
+#   get_all_graphlets(adjacency_matrix, 4)
+# )
+# matrix=adjacency_matrix
+# n=3
+# start_node=1
+# current_node=1
+# route=1
+# visited=1
+# routes=0
 
-current_node=next_node
-route=c(route, next_node)
-visited=c(visited, next_node)
+# current_node=next_node
+# route=c(route, next_node)
+# visited=c(visited, next_node)
 
-plot(graph.adjacency(adjacency_matrix, weighted = TRUE, mode = "undirected"))
+# plot(graph.adjacency(adjacency_matrix, weighted = TRUE, mode = "undirected"))
