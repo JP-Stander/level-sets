@@ -2,68 +2,83 @@ Sys.setenv(
     RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
 )
 
+# Import needed R libraries
 library(reticulate)
-# library(igraph)
-# library(stringr)
-# library(stellaR)
-# library(rlist)
 library(Matrix)
+library(reshape2)
 library(ScreenClean)
 library(node2vec)
 py_config()
 setwd(paste0(getwd(), "/level-sets"))
 
-# source_python("level_sets/utils.py")
+# Import needed python functions
 source_python("images/utils.py")
 source_python("graphical_model/utils.py")
+
+# Import needed R functions
 source("graphical_model/utils.R")
 source("graphical_model/reference_graphs.R")
 
-images <- paste0("dotted/", list.files("../dtd/images/dotted/", pattern = "*.jpg", recursive = TRUE))
-images <- c(images, paste0("fibrous/", list.files("../dtd/images/fibrous", pattern = "*.jpg", recursive = TRUE)))
-# folders <- dirname(images)
-num_images <- 4#length(images)
-col_names <- unlist(lapply(names(reference.cliques), function(x) {
+# List images in database
+n_images <- 10
+images <- paste0("dotted/", sample(list.files("../dtd/images/dotted/", pattern = "*.jpg", recursive = TRUE), n_images))
+images <- c(images, paste0("fibrous/", sample(list.files("../dtd/images/fibrous", pattern = "*.jpg", recursive = TRUE), n_images)))
+images <- c(images,
+    "dotted/dotted_0001.jpg",
+    "dotted/dotted_0103.jpg",
+
+    "fibrous/fibrous_0216.jpg",
+    "fibrous/fibrous_0110.jpg"
+)
+num_images <- length(images)
+
+# Number of embeddings for Node2Vec
+num_embeddings <- 10
+image_size <- 30
+q <- 1
+p <- 2
+num_walks <- 10
+walk_length <- 6
+
+# Get all names of graphlets that will be used
+col_names_graphlets <- unlist(lapply(names(reference.cliques), function(x) {
     names(reference.cliques[[x]])
 }))
-col_names <- c("graph_name", col_names[!startsWith(col_names, "g5")])
-rect_data <- setNames(data.frame(matrix(0, ncol = length(col_names) + 10, nrow = num_images)), col_names)
-subgraphs_coordinates <- data.frame(
-    graph_name = character(0),
-    graphlet_name = character(0),
-    x = numeric(0),
-    y = numeric(0)
-)
-# rotate <- function(x) t(apply(x, 2, rev))
+col_names_graphlets <- col_names_graphlets[!startsWith(col_names_graphlets, "g5")]
+
+# Name of Node2Vec embeddings
+col_names_embeddings <- paste("embedding", 1:num_embeddings, sep = "_")
+
 start_time <- Sys.time()
-for (i in c(1, 239)){ #seq_along(images[1:3])
+for (i in seq_along(images)){
     img <- load_image(
         paste0("../dtd/images/", images[i], sep = ""),
-        list(10, 10)
+        list(image_size, image_size)
+    )
+
+    # Create rectangular datasets to save results into
+    # Graphlet counts
+    graphlet_counts <- setNames(
+        data.frame(matrix(0, ncol = length(col_names_graphlets) + 2, nrow = 1)),
+        c("image_name", "image_type", col_names_graphlets)
+    )
+
+    # Graphlet locations
+    subgraphs_coordinates <- data.frame(
+        image_name = character(0),
+        image_type = character(0),
+        graphlet_name = character(0),
+        x = numeric(0),
+        y = numeric(0)
     )
     image_name <- tools::file_path_sans_ext(basename(images[i]))
-    rect_data[i, "graph_name"] <- image_name
+    image_type <- strsplit(image_name, "_")[[1]][1]
+
+    graphlet_counts["image_name"] <- image_name
+    graphlet_counts["image_type"] <- image_type
+
     # image(img, col=grey.colors(n=255))
-    # Get the image dimensions
-    # height <- dim(img)[1]
-    # width <- dim(img)[2]
 
-    # # Calculate the center of the image
-    # center_x <- width / 2
-    # center_y <- height / 2
-
-    # # Define the size of the block
-    # block_size <- 20
-
-    # # Calculate the corners of the block
-    # start_x <- center_x - block_size / 2 + 10
-    # end_x <- center_x + block_size / 2 + 10
-    # start_y <- center_y - block_size / 2 + 10
-    # end_y <- center_y + block_size / 2 + 10
-
-    # Extract the block
-    # img <- img[start_y:end_y, start_x:end_x]
-    # image(img)
     gm <- graphical_model(
         img,
         TRUE,
@@ -84,11 +99,12 @@ for (i in c(1, 239)){ #seq_along(images[1:3])
         for (j in seq_len(dim(subgraph)[1])){
             clique <- subgraph[j, ]
             clique_name <- get_graphlet_num(binary_edges[clique, clique])
-            rect_data[i, clique_name] <- rect_data[i, clique_name] + 1
+            graphlet_counts[i, clique_name] <- graphlet_counts[i, clique_name] + 1
 
             subgraphs_coordinates[nrow(subgraphs_coordinates) + 1, ] <- c(
                 image_name,
-                clique_name, 
+                strsplit(image_name, "_")[[1]][1],
+                clique_name,
                 colMeans(attr[clique, c("x-coor", "y-coor")])
             )
         }
@@ -99,31 +115,34 @@ for (i in c(1, 239)){ #seq_along(images[1:3])
     edges_list <- which(edges_cut != 0, arr.ind = TRUE)
     edges_list <- cbind(edges_list, edges_cut[edges_list])
 
-    embeddings <- node2vecR(
+    node_2_vec <- node2vecR(
         edges_list,
-        p = 2,
-        q = 1,
-        num_walks = 10,
-        walk_length = 6,
-        dim = 10
+        p = p,
+        q = q,
+        num_walks = num_walks,
+        walk_length = walk_length,
+        dim = num_embeddings
     )
-    # i_1 <- length(col_names) + 1
-    # i_2 <- length(col_names) + 10
-    rect_data[i, (length(col_names) + 1):(length(col_names) + 10)] <- colSums(embeddings)
-    # GraphSAGE approach
-    # graph <- StellarGraph$new(binary_edges)
 
-    # sage <- GraphSAGENodeGenerator(graph, batch_size = 2) %>%
-    #     set_base_model("graphsage-mean") %>%
-    #     set_target_size(10) %>%
-    #     set_num_samples(c(5, 2))
+    # Node2Vec Embeddings
+    embeddings <- setNames(
+        data.frame(matrix(0, ncol = length(col_names_embeddings) + 2, nrow = dim(node_2_vec)[1])),
+        c("image_name", "image_type", col_names_embeddings)
+    )
+    embeddings["image_name"] <- rep(image_name, nrow(embeddings))
+    embeddings["image_type"] <- rep(image_type, nrow(embeddings))
+    embeddings[, col_names_embeddings] <- node_2_vec
+    # embeddings[i, col_names_embeddings] <- apply(node_2_vec, 2, function(x) list(x))
 
-    # num_epochs <- 10
-    # history <- sage$fit_generator(num_epochs = num_epochs)
-    # node_embeddings <- sage$transform(graph$nodes())
+    result_path = paste("../results/datasets/", image_size, "_p", p, "_q", q, "_nw", num_walks, "_wl", walk_length, "/", image_name, sep = "")
+    dir.create(result_path, recursive = TRUE, showWarnings = FALSE)
+    write.table(graphlet_counts, paste(result_path, "graphlet_counts.csv", sep = "/"), sep = ",")
+    write.csv(subgraphs_coordinates, paste(result_path, "subgraphs_coordinates.csv", sep = "/"))
+    write.csv(embeddings, paste(result_path, "embeddings.csv", sep = "/"))
 }
+
 end_time <- Sys.time()
 time_taken <- end_time - start_time
 time_taken
 
-write.csv(rect_data, "rect_data.csv")
+# write.csv(rect_data, "rect_data.csv")
