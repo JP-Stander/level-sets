@@ -1,4 +1,5 @@
-library(ggplot)
+library(ggplot2)
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 gc <- paste0(
     "../results/datasets/30_p2_q1_nw10_wl6/", 
@@ -24,14 +25,14 @@ geom_point(
         col = image_type
         ),
     position = "jitter"
-    )
+    ) +
+theme_classic() +
+theme(
+    axis.text = element_text(size = 15),
+    axis.title = element_text(size = 15),
+    legend.text = element_text(size = 15),
+    legend.title = element_blank()
+) +
+xlab("Graphlet name")
 
-ggplot(graphlet_counts) +
-geom_violin(
-    aes(
-        x = graphlet_name,
-        y = proportion,
-        fill = image_type
-        ),
-    position = "dodge"
-    )
+ggsave("../results/plots/ref_graph/graphlet_prop_scatter.png")
