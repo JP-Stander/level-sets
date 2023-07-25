@@ -1,7 +1,7 @@
 library(ggplot2)
 library(factoextra)
 
-setwd(paste0(getwd(), "/level-sets"))
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 file_names <- c(
     # "../results/datasets/30_p2_q1_nw10_wl6/fibrous_0123/embeddings.csv"

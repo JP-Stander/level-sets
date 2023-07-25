@@ -10,9 +10,6 @@ from sklearn.model_selection import train_test_split
 from level_sets.utils import load_image
 from graphical_model.utils import graphical_model, calculate_graph_attributes
 
-
-# import os
-# os.chdir(r"/home/qxz1djt/projects/phd/level-sets")
 img = load_image("../mnist/img_45.jpg")
 
 gm = graphical_model(

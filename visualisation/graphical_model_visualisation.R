@@ -1,5 +1,5 @@
 library(ggplot2)
-setwd(paste0(getwd(), "/level-sets"))
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 subgraphs_coordinates <- read.csv("../results/datasets/30_p2_q1_nw10_wl6/dotted_0001/subgraphs_coordinates.csv")
 embeddings <- read.csv("../results/datasets/30_p2_q1_nw10_wl6/dotted_0001/embeddings.csv")

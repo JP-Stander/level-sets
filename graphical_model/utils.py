@@ -1,18 +1,87 @@
 # %%
+# import os
+# from PIL import Image
+# import numpy as np
+# os.chdir(r"/home/qxz1djt/projects/phd/level-sets")
+# img = Image.open('../mnist/img_16.jpg')
+# img = img.resize((10, 10))
+# img = np.array(img)
+
+# alpha=0.5
+# normalize_gray=True
+# ls_spatial_dist='euclidean'
+# ls_attr_dist='cityblock'
+import os
+import sys
+current_script_directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, current_script_directory)
 import igraph as ig
 import numpy as np
 import pandas as pd
 from level_sets.metrics import compactness, elongation
 from level_sets.utils import get_level_sets, spatio_environ_dependence
+import spatio_distance
 
+# %%
+img = Image.open('../mnist/img_16.jpg')
+img = img.resize((10, 10))
+img = np.array(img)
 # %%
 # Defining the image's level-sets as a spatial point pattern
 # For now the location of the level-set is the mean location of all pixels in the set
 # spp = [id, x, y, set-value, set-size]
 
+def graphical_model(
+    img,
+    return_spp=False,
+    alpha=0.5,
+    normalise_gray=True,
+    size_proportion=False,
+    ls_spatial_dist="euclidean",
+    ls_attr_dist="cityblock"
+    ):
 
-# TODO: Get a better name for this function
-def graphical_model(img, return_spp=False, alpha=0.5, normalize_gray=True):
+    should_normalise = normalise_gray and img.max() > 1
+    level_sets = get_level_sets(img)
+    uni_level_sets = pd.unique(level_sets.flatten())
+    results = []
+    
+    for ls in uni_level_sets:
+        subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
+        level_set = (level_sets == ls) * ls
+        set_value = img[subset[0]]
+        set_size = len(subset)/(img.shape[0]*img.shape[1]) if size_proportion else len(subset)
+        mean_values = np.mean(subset, axis=0)
+        intensity = set_value / 255 if should_normalise else set_value
+
+        results.append({
+            "level-set": ls,
+            "x-coor": mean_values[0],
+            "y-coor": mean_values[1],
+            "intensity": intensity,
+            "size": set_size,
+            "compactness": compactness(level_set),
+            "elongation": elongation(level_set),
+            "pixel_indices": subset
+        })
+        
+    spp = pd.DataFrame(results)
+    spp_np = spp.drop(labels=["pixel_indices"], axis=1).values.astype(float)
+    nodes = spp.iloc[:, 1:3]
+    edges = np.asarray(
+        spatio_distance.calculate_distance(
+            spp_np,
+            ls_spatial_dist,
+            ls_attr_dist,
+            alpha
+        )
+    )
+
+    if return_spp:
+        return nodes, edges, spp
+    return nodes, edges
+
+def graphical_model2(img, return_spp=False, alpha=0.5, normalize_gray=True):
 
     level_sets = get_level_sets(img)
 
@@ -57,7 +126,6 @@ def graphical_model(img, return_spp=False, alpha=0.5, normalize_gray=True):
     if return_spp:
         return nodes, edges, spp2
     return nodes, edges
-
 
 def calculate_graph_attributes(graph):
     attributes = {}
@@ -174,3 +242,5 @@ def find_graphlets(g, k):
     # print the resulting counts for each subgraph
     for idx, sg in enumerate(subgraphs):
         print("Graphlet {}: {}".format(idx, graphlet_counts[idx]))
+
+# %%

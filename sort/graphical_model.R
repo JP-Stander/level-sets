@@ -1,7 +1,3 @@
-Sys.setenv(
-  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
-)
-
 library(reticulate)
 library(igraph)
 library(stringr)
@@ -9,11 +5,7 @@ library(rlist)
 library(Matrix)
 library(ScreenClean)
 py_config()
-setwd(paste0(getwd(), "/level-sets"))
-
-# for (pkg in c("pandas", "Pillow", "scikit-image", "scikit-learn", "opencv-python", "igraph")) {
-#   py_install(pkg)
-# }
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 source_python("level_sets/utils.py")
 source_python("graphical_model/utils.py")

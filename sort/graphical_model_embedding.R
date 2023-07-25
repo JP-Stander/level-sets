@@ -5,7 +5,7 @@ library(reshape2)
 library(ScreenClean)
 library(node2vec)
 py_config()
-setwd(paste0(getwd(), "/level-sets"))
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 
 # Import needed python functions
 source_python("images/utils.py")

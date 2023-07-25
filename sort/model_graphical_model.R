@@ -1,7 +1,3 @@
-Sys.setenv(
-  RETICULATE_PYTHON = "/home/qxz1djt/.local/share/virtualenvs/aip.mlops.terraform.modules-iNbkyG8C/bin/python"
-)
-
 library(reticulate)
 library(igraph)
 library(stringr)

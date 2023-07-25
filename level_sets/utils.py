@@ -5,7 +5,6 @@ from sklearn.metrics.pairwise import distance_metrics
 
 # Used for testing
 # from skimage import io, color, img_as_ubyte
-# img = io.imread(r'C:\Users\QXZ1DJT\Google Drive\JP PhD\Data\DB\data\natural_images\car\car_0000.jpg')
 
 # gray = color.rgb2gray(img)
 # image = img_as_ubyte(gray)
@@ -99,8 +98,8 @@ def spatio_environ_dependence(point_a, point_b, dist_type_a='l2', dist_type_b='l
         {dist_type_b} is an invalid distance type for argument dist_type_b. The options are\n{list(distance_metrics().keys())}
     """
 
-    u_s = _dist(point_a[1:3], point_b[1:3], dist_type_a)
-    u_e = _dist(point_a[3:], point_b[3:], dist_type_b)
+    u_s = _dist(point_a[:2], point_b[:2], dist_type_a)
+    u_e = _dist(point_a[2:], point_b[2:], dist_type_b)
 
     m = np.exp(-(alpha * u_e + (1 - alpha) * u_s))
 
