@@ -5,12 +5,12 @@ import numpy
 
 extensions = [
     Extension(
-        "spatio_distance", 
+        "spatio_distance",
         ["spatio_distance.pyx"],
-        include_dirs=[numpy.get_include()]  
+        include_dirs=[numpy.get_include()]
     )
 ]
 
 setup(
-    ext_modules = cythonize(extensions)
+    ext_modules=cythonize(extensions)
 )

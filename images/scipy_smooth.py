@@ -1,4 +1,3 @@
-# %%
 import numpy as np
 import pandas as pd
 import statistics as stats
@@ -10,7 +9,7 @@ from skimage import measure
 #     if n <= nmax:
 #         neighbours = _find_neighbours(set_index, n, N, M, connectivity)
 #         neighbour_values = [img[idx] for idx in neighbours]
-        
+
 #         median = stats.median(neighbour_values)
 #         minimum = min(neighbour_values)
 #         maximum = max(neighbour_values)
@@ -21,9 +20,10 @@ from skimage import measure
 #                 return _smooth_level_set(img, n+1, nmax, connectivity, set_label, level_sets, N, M)
 #         else:
 #             return median
-            
+
 #     else:
 #         return set_value
+
 
 def _smooth_level_set(img, n, nmax, connectivity, set_label, level_sets, N, M):
     set_index = list(map(tuple, np.asarray(np.where(level_sets == set_label)).T.tolist()))
@@ -31,7 +31,7 @@ def _smooth_level_set(img, n, nmax, connectivity, set_label, level_sets, N, M):
     for n in range(nmax):
         neighbours = _find_neighbours(set_index, n, N, M, connectivity)
         neighbour_values = [img[idx] for idx in neighbours]
-        
+
         median = stats.median(neighbour_values)
         minimum = min(neighbour_values)
         maximum = max(neighbour_values)
@@ -41,8 +41,8 @@ def _smooth_level_set(img, n, nmax, connectivity, set_label, level_sets, N, M):
         else:
             return median
     return set_value
-            
-    
+
+
 def _find_neighbours(c, nmax, N, M, connectivity=4):  # noqa: C901
     """
     Function to get the neoghbour hood of a set of pixels in an image. This function
@@ -81,28 +81,30 @@ def _find_neighbours(c, nmax, N, M, connectivity=4):  # noqa: C901
 
     return c
 
+
 # %%
-img = np.random.randint(0,255,(6,6))
-img[2,2]=80
-img[2,3]=80
-img[3,2]=80
+img = np.random.randint(0, 255, (6, 6))
+img[2, 2] = 80
+img[2, 3] = 80
+img[3, 2] = 80
 level_sets = measure.label(img + 1, connectivity=1)
 set_sizes = pd.value_counts(level_sets.flatten())
-p=3
+p = 3
 req_set_sizes = set_sizes.iloc[(set_sizes == p).values].index
-set_label=15
+set_label = 15
 N, M = img.shape
 
 _smooth_level_set(img, 1, 3, 4, set_label, level_sets, N, M)
 # %%
 
+
 def levelset_median_smoother(
-    image, # Image to be smoothed
-    pmax=3, # Maximum level-set size to be smoothed
-    nmax=2, # Maximum order of neighbourhood
-    pmin=1, # Minimum order of neighbourhood
-    connectivity=8 # Connectivity to be used for determining level-sets
-    ):
+    image,  # Image to be smoothed
+    pmax=3,  # Maximum level-set size to be smoothed
+    nmax=2,  # Maximum order of neighbourhood
+    pmin=1,  # Minimum order of neighbourhood
+    connectivity=8  # Connectivity to be used for determining level-sets
+):
     """
     Function to apply adaptive median smoother using level sets.
 

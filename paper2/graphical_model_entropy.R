@@ -31,12 +31,12 @@ attribute_entropy <- function(g, attribute) {
 }
 
 
-for (file in all_files){
+for (file in all_files[1]){
     # Read the JSON file
     json_data <- jsonlite::fromJSON(paste0(path_to_files, "/", file))
 
     # Create an edge dataframe
-    edges_df <- as.data.frame(json_data$edges) %>% 
+    edges_df <- as.data.frame(json_data$edges) %>%
         mutate(edge = map_chr(edge, ~paste(.x, collapse = ", "))) %>% 
         separate(edge, into = c("from", "to"), sep = ", ", convert = TRUE)
 

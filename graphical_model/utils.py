@@ -1,5 +1,6 @@
 # %%
 # import os
+from shapely.geometry import MultiPoint, mapping
 # from PIL import Image
 # import numpy as np
 # os.chdir(r"/home/qxz1djt/projects/phd/level-sets")
@@ -7,64 +8,75 @@
 # img = img.resize((10, 10))
 # img = np.array(img)
 
-# alpha=0.5
-# normalize_gray=True
-# ls_spatial_dist='euclidean'
-# ls_attr_dist='cityblock'
+# alpha = 0.5
+# normalize_gray = True
+# ls_spatial_dist = 'euclidean'
+# ls_attr_dist = 'cityblock'
 import os
 import sys
-current_script_directory = os.path.dirname(os.path.realpath(__file__))
-sys.path.insert(0, current_script_directory)
-import igraph as ig
 import numpy as np
 import pandas as pd
-from level_sets.metrics import compactness, elongation
-from level_sets.utils import get_level_sets, spatio_environ_dependence
-import spatio_distance
+import igraph as ig
+
+current_script_directory = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, current_script_directory)
+from level_sets.metrics import compactness, elongation  # noqa: E402
+from level_sets.utils import get_level_sets, get_fuzzy_sets  # noqa: E402
+import spatio_distance  # noqa: E402
 
 # %%
-img = Image.open('../mnist/img_16.jpg')
-img = img.resize((10, 10))
-img = np.array(img)
+# img = Image.open('../mnist/img_16.jpg')
+# img = img.resize((50, 50))
+# img = np.array(img)
 # %%
 # Defining the image's level-sets as a spatial point pattern
 # For now the location of the level-set is the mean location of all pixels in the set
 # spp = [id, x, y, set-value, set-size]
 
+
 def graphical_model(
     img,
     return_spp=False,
+    set_type="level",
+    fuzzy_cutoff=20,
+    normalise_pixel_index=False,
+    connectivity=4,
     alpha=0.5,
     normalise_gray=True,
     size_proportion=False,
     ls_spatial_dist="euclidean",
-    ls_attr_dist="cityblock"
-    ):
+    ls_attr_dist="cityblock",
+    centroid_method="mean"
+):
 
     should_normalise = normalise_gray and img.max() > 1
-    level_sets = get_level_sets(img)
+    level_sets = get_level_sets(img, connectivity=connectivity / 4) if set_type == "level" else \
+        get_fuzzy_sets(img, fuzzy_cutoff, connectivity) + 1
     uni_level_sets = pd.unique(level_sets.flatten())
     results = []
-    
+    X, Y = img.shape
+
     for ls in uni_level_sets:
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = (level_sets == ls) * ls
         set_value = img[subset[0]]
-        set_size = len(subset)/(img.shape[0]*img.shape[1]) if size_proportion else len(subset)
-        mean_values = np.mean(subset, axis=0)
+        set_size = len(subset) / (img.shape[0] * img.shape[1]) if size_proportion else len(subset)
+        points = MultiPoint(subset)
+        centroid = points.centroid if centroid_method == "mean" else points.representative_point()
+        centroid = mapping(centroid)['coordinates']
         intensity = set_value / 255 if should_normalise else set_value
 
         results.append({
             "level-set": ls,
-            "x-coor": mean_values[0],
-            "y-coor": mean_values[1],
+            "x-coor": centroid[0] / X if normalise_pixel_index else centroid[0],
+            "y-coor": centroid[1] / X if normalise_pixel_index else centroid[1],
             "intensity": intensity,
             "size": set_size,
             "compactness": compactness(level_set),
             "elongation": elongation(level_set),
             "pixel_indices": subset
         })
-        
+
     spp = pd.DataFrame(results)
     spp_np = spp.drop(labels=["pixel_indices"], axis=1).values.astype(float)
     nodes = spp.iloc[:, 1:3]
@@ -81,51 +93,6 @@ def graphical_model(
         return nodes, edges, spp
     return nodes, edges
 
-def graphical_model2(img, return_spp=False, alpha=0.5, normalize_gray=True):
-
-    level_sets = get_level_sets(img)
-
-    uni_level_sets = pd.unique(level_sets.flatten())
-    # spp = np.zeros((uni_level_sets.shape[0], 7))
-    spp2 = pd.DataFrame(np.zeros((uni_level_sets.shape[0], 7)),
-                        columns=["level-set", "x-coor", "y-coor",
-                                 "intensity", "size", "compactness",
-                                 "elongation"
-                                 ]
-                        )
-    for i, ls in enumerate(uni_level_sets):
-        subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
-        level_set = np.array(level_sets == ls) * ls
-        set_value = img[subset[0]]
-        set_size = len(subset)
-        # TODO Get a smarter way to do this
-        # spp[i, 0] = ls
-        spp2.loc[i, 'level-set'] = ls
-        # spp[i, 1:3] = np.mean(subset, axis=0)
-        spp2.loc[i, "x-coor"] = np.mean(subset, axis=0)[0, ]
-        spp2.loc[i, "y-coor"] = np.mean(subset, axis=0)[1, ]
-        # spp[i, 3] = set_value / 255 if normalize_gray and max(img.flatten()) > 1 else set_value
-        spp2.loc[i, 'intensity'] = set_value / 255 if normalize_gray and max(img.flatten()) > 1 else set_value
-        # spp[i, 4] = set_size
-        spp2.loc[i, 'size'] = set_size
-        # spp[i, 5] = compactness(level_set)
-        spp2.loc[i, 'compactness'] = compactness(level_set)
-        # spp[i, 6] = elongation(level_set)
-        spp2.loc[i, 'elongation'] = elongation(level_set)
-
-    distance_matrix = np.zeros((spp2.shape[0], spp2.shape[0]))
-    for i in range(spp2.shape[0]):
-        for j in np.arange(i + 1, spp2.shape[0], 1):
-            m = spatio_environ_dependence(spp2.iloc[i, :], spp2.iloc[j, :], "l2", "l1", alpha)
-            distance_matrix[i, j] = m
-            distance_matrix[j, i] = m
-
-    nodes = spp2.iloc[:, 1:3]
-    edges = distance_matrix
-
-    if return_spp:
-        return nodes, edges, spp2
-    return nodes, edges
 
 def calculate_graph_attributes(graph):
     attributes = {}

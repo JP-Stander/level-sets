@@ -3,6 +3,7 @@ library(reticulate)
 library(jsonlite)
 library(foreach)
 library(Matrix)
+library(parallel)
 
 py_config()
 setwd("/home/qxz1djt/projects/phd/level-sets")
@@ -18,45 +19,49 @@ source("graphical_model/reference_graphs.R")
 # List images in database
 n_images <- 10
 image_types <- c("dotted", "fibrous")
-images <- c()
-for (image_type in image_types){
-    images <- c(images,
-        paste(
-            image_type,
-            sample(list.files(paste0("../dtd/images/", image_type), pattern = "*.jpg", recursive = TRUE), n_images),
-            sep = "/"
-        )
-    )
-}
+images <- c(
+    "dotted/dotted_0161.jpg",
+    "dotted/dotted_0184.jpg",
+    "fibrous/fibrous_0116.jpg",
+    "fibrous/fibrous_0165.jpg"
+)
+
 
 num_images <- length(images)
-image_size <- 30
+image_size <- 50
 ls_spatial_dist <- "euclidean"
 ls_attr_dist <- "cityblock"
+centroid_method <- "mean"
+custom_folder <- ""
+
 
 result_path <- paste(
-    "../my_graphical_dataset/img_size_",
-    image_size,
-    "_spatial_", ls_spatial_dist,
-    "_attr_", ls_attr_dist,
-    sep = ""
-    )
+    "..",
+    "paper_results",
+    sep = "/"
+)
+
 dir.create(result_path, recursive = TRUE, showWarnings = FALSE)
 
+
 foreach(i = seq_along(images)) %do% {
+    #Our method
+    cat(images[i])
     cat("Processing image", i, "of", length(images), "\n")
     img <- load_image(
-        paste0("../dtd/images/", images[i], sep = ""),
-        list(image_size, image_size)
+        paste0("../dtd/images/", images[i], sep = "")
+        # list(image_size, image_size)
     )
+    img <- img[1:image_size, 1:image_size]
     gm <- graphical_model(
         img,
         TRUE,
         0.5,
         normalise_gray = TRUE,
         size_proportion = FALSE,
-        ls_spatial_dist = "euclidean",
-        ls_attr_dist = "cityblock"
+        ls_spatial_dist = ls_spatial_dist,
+        ls_attr_dist = ls_attr_dist,
+        centroid_method = centroid_method
     )
 
     nodes <- gm[1]

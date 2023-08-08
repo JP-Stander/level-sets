@@ -18,7 +18,6 @@ from sklearn.metrics.pairwise import distance_metrics
 
 
 def get_level_sets(img, connectivity=1):
-
     level_sets = measure.label(
         img,
         background=-1,
@@ -29,7 +28,6 @@ def get_level_sets(img, connectivity=1):
 
 
 def cut_level_set(img):
-
     img = np.array(img)
     # Making sure the image is binarized
     img = (img != 0).astype(int)
@@ -154,3 +152,36 @@ def find_neighbours(c, nmax, N, M, connectivity=4):  # noqa: C901
         c = [a for a in pd.unique(c + w)]
 
     return c
+
+
+def _is_valid(i, j, matrix):
+    # Check if the pixel (i, j) is within the bounds of the matrix
+    return 0 <= i < len(matrix) and 0 <= j < len(matrix[0])
+
+
+def _dfs(i, j, matrix, set_id, output, delta, connectivity, reference_pixel_value):
+    # Define possible moves based on the connectivity
+    moves = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+    if connectivity == 8:
+        moves += [(1, 1), (-1, 1), (-1, -1), (1, -1)]
+
+    stack = [(i, j)]
+    while stack:
+        i, j = stack.pop()
+        if _is_valid(i, j, matrix) and abs(np.float64(matrix[i][j]) - np.float64(reference_pixel_value)) <= delta:
+            output[i][j] = set_id
+            for move in moves:
+                ni, nj = i + move[0], j + move[1]
+                if _is_valid(ni, nj, matrix) and output[ni][nj] == -1:
+                    stack.append((ni, nj))
+
+
+def get_fuzzy_sets(matrix, delta=0, connectivity=4):
+    output = [[-1 for _ in range(len(matrix[0]))] for _ in range(len(matrix))]  # Initialize with -1 (unassigned)
+    set_id = 0
+    for i in range(len(matrix)):
+        for j in range(len(matrix[0])):
+            if output[i][j] == -1:
+                _dfs(i, j, matrix, set_id, output, delta, connectivity, matrix[i][j])
+                set_id += 1  # Increment set ID for the next set
+    return np.array(output)

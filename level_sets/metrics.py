@@ -76,6 +76,12 @@ def perimeter(level_set):
 
     return perimeter
 
+def width_to_height(level_set):
+    level_set = np.array(level_set)
+    level_set = cut_level_set(level_set)
+    height, width = level_set.shape
+
+    return width/height
 
 def max_distance(level_set, return_coordinates=False):
     level_set = np.array(level_set)
@@ -95,6 +101,27 @@ def max_distance(level_set, return_coordinates=False):
         return max_dist, [c1_max, c2_max]
 
     return max_dist
+
+def get_angle(image):
+    # Get the indices of the non-zero elements (i.e., 1s)
+    y, x = np.where(image == 1)
+
+    # Compute the centroid
+    x_bar = np.mean(x)
+    y_bar = np.mean(y)
+
+    # Compute the second central moments
+    mu_20 = np.sum((x - x_bar) ** 2)
+    mu_02 = np.sum((y - y_bar) ** 2)
+    mu_11 = np.sum((x - x_bar) * (y - y_bar))
+
+    # Calculate the orientation
+    theta = 0.5 * np.arctan2(2 * mu_11, mu_20 - mu_02)
+
+    # Convert to degrees
+    theta_deg = np.degrees(theta)
+    
+    return theta_deg
 
 
 def major_axis(level_set):
@@ -138,9 +165,10 @@ def _pixels_to_points(pixels):
 
     points = [[], []]
     for i in range(locs.shape[0]):
-        neighbourhood = pixels[locs[i][0] - 2:locs[i][0] + 2,
-                               locs[i][1] - 1:locs[i][1] + 2
-                               ]
+        neighbourhood = pixels[
+            locs[i][0] - 2:locs[i][0] + 2,
+            locs[i][1] - 1:locs[i][1] + 2
+        ]
         if sum((filter * neighbourhood == 1).flatten()) == 4:
             continue
         points[0].append(locs[i, 0] + 0.5)
