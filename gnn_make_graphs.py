@@ -1,4 +1,5 @@
 # %%
+import os
 from os import listdir, cpu_count
 from networkx import Graph, write_graphml
 from images.utils import load_image
@@ -31,66 +32,72 @@ def make_graph(nodes, edges, attrs, d=0.005):
     return g
 
 
-def img_to_graph(image):
+def img_to_graph(image, d):
     img_size = 50
     img = load_image(
         image,
         [img_size, img_size]
     )
 
-    nodes_ls, edges_ls, attr_ls = graphical_model(
-        img=img,
-        return_spp=True,
-        alpha=0.5,
-        set_type="level"
-    )
+    # nodes_ls, edges_ls, attr_ls = graphical_model(
+    #     img=img,
+    #     return_spp=True,
+    #     alpha=0.5,
+    #     set_type="level"
+    # )
 
-    g1 = make_graph(nodes_ls, edges_ls, attr_ls)
-    write_graphml(g1, f"../graphical_models/level_sets/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+    # g1 = make_graph(nodes_ls, edges_ls, attr_ls)
+    # write_graphml(g1, f"../graphical_models/level_sets/{image.split('/')[-1].split('.')[0]}_graph.graphml")
 
     nodes_fs, edges_fs, attr_fs = graphical_model(
         img=img,
         return_spp=True,
         alpha=0.5,
         set_type="fuzzy",
-        fuzzy_cutoff=10,
+        fuzzy_cutoff=d,
     )
 
     g2 = make_graph(nodes_fs, edges_fs, attr_fs)
-    write_graphml(g2, f"../graphical_models/fuzzy_sets_10/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+    write_graphml(g2, f"../graphical_models/fuzzy_sets_{d}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
 
-    nodes_fs2, edges_fs2, attr_fs2 = graphical_model(
-        img=img,
-        return_spp=True,
-        alpha=0.5,
-        set_type="fuzzy",
-        fuzzy_cutoff=30,
-    )
+    # nodes_fs2, edges_fs2, attr_fs2 = graphical_model(
+    #     img=img,
+    #     return_spp=True,
+    #     alpha=0.5,
+    #     set_type="fuzzy",
+    #     fuzzy_cutoff=30,
+    # )
 
-    g3 = make_graph(nodes_fs2, edges_fs2, attr_fs2)
-    write_graphml(g3, f"../graphical_models/fuzzy_sets_30/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+    # g3 = make_graph(nodes_fs2, edges_fs2, attr_fs2)
+    # write_graphml(g3, f"../graphical_models/fuzzy_sets_30/{image.split('/')[-1].split('.')[0]}_graph.graphml")
 
 
 # %%
+
 
 if __name__ == '__main__':
     images_path = "../dtd/images/"
     images = ["../dtd/images/dotted/" + file for file in listdir("../dtd/images/dotted")]
     images += ["../dtd/images/fibrous/" + file for file in listdir("../dtd/images/fibrous")]
-    images = images
+    ds = [i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
+    
+    for d in ds:
+        if not os.path.exists(f"../graphical_models/fuzzy_sets_{d}"):
+            os.makedirs(f"../graphical_models/fuzzy_sets_{d}")
 
     n_cores = cpu_count() - 2
     print(f'Running process on {n_cores} cores')
-    # with ProcessPoolExecutor(max_workers=n_cores) as executor:
-    #     executor.map(img_to_graph, images)
-    with ProcessPoolExecutor() as executor:
+
+    with ProcessPoolExecutor(max_workers=n_cores) as executor:
         # Setup tqdm
-        future_to_image = {executor.submit(img_to_graph, image): image for image in images}
-        for future in tqdm(as_completed(future_to_image), total=len(images)):
+        future_to_detail = {(executor.submit(img_to_graph, image, d_value)): (image, d_value) for image in images for d_value in ds}
+
+        for future in tqdm(as_completed(future_to_detail), total=len(images) * len(ds)):
             try:
                 future.result()  # retrieve results if there are any
             except Exception as e:
-                print(f"Error processing image: {future_to_image[future]}. Error: {e}")
+                image, d_value = future_to_detail[future]
+                print(f"Error processing image: {image} with d_value: {d_value}. Error: {e}")
 
 
 # %%

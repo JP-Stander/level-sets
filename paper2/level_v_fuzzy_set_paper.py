@@ -5,7 +5,7 @@ from level_sets.utils import get_level_sets, get_fuzzy_sets
 from matplotlib import pyplot as plt
 import networkx as nx
 # %%
-img_size = 50
+img_size = 200
 img = load_image(
     "../dtd/images/dotted/dotted_0161.jpg",
     [img_size, img_size]
@@ -20,23 +20,23 @@ img2 = load_image(
 level_sets = get_level_sets(img, 2)
 fuzzy_sets = get_fuzzy_sets(img, 20, 8)
 
-# plt.figure()
-# plt.imshow(img, 'gray')
-# plt.xticks([])
-# plt.yticks([])
+plt.figure()
+plt.imshow(img, 'rainbow')
+plt.xticks([])
+plt.yticks([])
 # plt.savefig(f"../paper_results/dotted_image_{img_size}.png", bbox_inches='tight')
 
-# plt.figure()
-# plt.imshow(level_sets)
-# plt.xticks([])
-# plt.yticks([])
-# plt.savefig(f"../paper_results/dotted_ls_{img_size}.png", bbox_inches='tight')
+plt.figure()
+plt.imshow(level_sets, 'gray')
+plt.xticks([])
+plt.yticks([])
+# plt.savefig(f"../paper_results/dotted_gray_ls_{img_size}.png", bbox_inches='tight')
 
-# plt.figure()
-# plt.imshow(fuzzy_sets)
-# plt.xticks([])
-# plt.yticks([])
-# plt.savefig(f"../paper_results/dotted_fs_{img_size}.png", bbox_inches='tight')
+plt.figure()
+plt.imshow(fuzzy_sets, 'gray')
+plt.xticks([])
+plt.yticks([])
+# plt.savefig(f"../paper_results/dotted_gray_fs_{img_size}.png", bbox_inches='tight')
 
 # %%
 nodes1_ls, edges1_ls, attr1_ls = graphical_model(
@@ -234,7 +234,7 @@ for attribute in ['compactness', "elongation", "size"]:
     
 # %% #############################################################
 level_sets2 = get_level_sets(img2, 2)
-fuzzy_sets2 = get_fuzzy_sets(img2, 40, 8)
+fuzzy_sets2 = get_fuzzy_sets(img2, 20, 8)
 
 plt.figure()
 plt.imshow(img2, 'gray')
@@ -243,14 +243,90 @@ plt.yticks([])
 plt.savefig(f"../paper_results/fibrous_image_{img_size}.png", bbox_inches='tight')
 
 plt.figure()
-plt.imshow(level_sets2)
+plt.imshow(level_sets2, 'gray')
 plt.xticks([])
 plt.yticks([])
-plt.savefig(f"../paper_results/fibrous_ls_{img_size}.png", bbox_inches='tight')
+plt.savefig(f"../paper_results/fibrous_gray_ls_{img_size}.png", bbox_inches='tight')
 
 plt.figure()
-plt.imshow(fuzzy_sets2)
+plt.imshow(fuzzy_sets2, 'gray')
 plt.xticks([])
 plt.yticks([])
-plt.savefig(f"../paper_results/fibrous_fs_{img_size}.png", bbox_inches='tight')
+plt.savefig(f"../paper_results/fibrous_gray_fs_{img_size}.png", bbox_inches='tight')
+# %%
+
+def image_to_graph(img):
+
+    # Create a graph
+    G = nx.Graph()
+
+    # Get the dimensions of the image
+    rows, cols = img.shape
+
+    # Helper function to check if a pixel is within the image boundaries
+    def in_bounds(r, c):
+        return 0 <= r < rows and 0 <= c < cols
+
+    # Add nodes and edges to the graph
+    for r in range(rows):
+        for c in range(cols):
+            # Add node with intensity attribute
+            G.add_node((r, c), intensity=img[r, c])
+
+            # Connect the pixel to its 8 neighbors
+            directions = [
+                (-1, -1), (-1, 0), (-1, 1),
+                (0, -1),           (0, 1),
+                (1, -1),  (1, 0),  (1, 1)
+            ]
+
+            for dr, dc in directions:
+                new_r, new_c = r + dr, c + dc
+                if in_bounds(new_r, new_c):
+                    G.add_edge((r, c), (new_r, new_c))
+
+    return G
+import math
+def grid_positions(G):
+    size = math.ceil(math.sqrt(len(G.nodes())))
+    pos = {}
+    for index, node in enumerate(G.nodes()):
+        row = index // size
+        col = index % size
+        pos[(row, col)] = node
+    return pos
+
+# %%
+
+G1_px = image_to_graph(img[:10,:10])
+node_colors2_ls = img[:10,:10]
+pos = grid_positions(G1_px)
+cmap = plt.cm.viridis
+nx.draw_networkx(
+    G1_px,
+    with_labels=False,
+    pos=pos,
+    # pos=graphviz_layout(G),
+    node_color = node_colors2_ls,
+    # node_size = node_sizes2_ls,
+    edge_color = "gray",
+    cmap=cmap
+)
+plt.savefig(f"../paper_results/dotted_px_graph_{img_size}.png", bbox_inches='tight')
+# %%
+G2_px = image_to_graph(img2[:10,:10])
+node_colors2_ls = img2[:10,:10]
+pos = grid_positions(G2_px)
+cmap = plt.cm.viridis
+nx.draw_networkx(
+    G2_px,
+    with_labels=False,
+    pos=pos,
+    # pos=graphviz_layout(G),
+    node_color = node_colors2_ls,
+    # node_size = node_sizes2_ls,
+    edge_color = "gray",
+    cmap=cmap
+)
+plt.savefig(f"../paper_results/fibrous_px_graph_{img_size}.png", bbox_inches='tight')
 # %%

@@ -24,7 +24,7 @@ def get_level_sets(img, connectivity=1):
         connectivity=connectivity
     )
 
-    return level_sets
+    return level_sets.astype(np.float64)
 
 
 def cut_level_set(img):
@@ -184,4 +184,4 @@ def get_fuzzy_sets(matrix, delta=0, connectivity=4):
             if output[i][j] == -1:
                 _dfs(i, j, matrix, set_id, output, delta, connectivity, matrix[i][j])
                 set_id += 1  # Increment set ID for the next set
-    return np.array(output)
+    return np.array(output).astype(np.float64)

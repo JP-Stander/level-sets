@@ -4,14 +4,34 @@ import seaborn as sns
 from sklearn.decomposition import PCA
 from matplotlib import pyplot as plt
 from sklearn.cluster import KMeans
+from scipy.spatial import distance
 from sklearn.manifold import TSNE
 
+# %%
 # Load the data
-sets = pd.read_csv('../unique_level_sets/sets_2_to_8_8conn.csv')
-# sets = sets.iloc[:1000, :]
+df = pd.read_csv('../unique_level_sets/sets_2_to_8_8conn.csv')
+sets = sets.iloc[:1000, :]
 # Reduce the columns
-sets = sets[['size', 'compactness', 'elongation', 'width_to_height', 'angle']]
+sets = df[['size', 'compactness', 'elongation', 'width_to_height', 'angle']]
 
+# %%
+def closest_points_to_centroids(centroids, data):
+    """
+    Find the index of points in `data` that are closest to each centroid in `centroids`.
+    
+    Args:
+    - centroids (numpy array): The array of centroids.
+    - data (numpy array): The original data.
+    
+    Returns:
+    - indices (list): A list of indices from the `data` that are closest to each centroid.
+    """
+    indices = []
+    for centroid in centroids:
+        distances = [distance.euclidean(centroid, point) for point in data]
+        closest_index = distances.index(min(distances))
+        indices.append(closest_index)
+    return indices
 # %%
 # Standardize the dataset
 mean = sets.mean(axis=0)
@@ -26,10 +46,15 @@ kmeans = KMeans(n_clusters=n_clusters, random_state=42)
 ## Standardised data
 # 1. TSNE transformation of standardised data
 tsne_on_std_data = tsne.fit_transform(std_sets)
+df["tsne-d1-std"] = tsne_on_std_data[:,0]
+df["tsne-d2-std"] = tsne_on_std_data[:,1]
 
 # 2. K-means on t-SNE results of standardised data
 kmeans_tsne_std = kmeans.fit(tsne_on_std_data)
 cluster_tsne_std = kmeans_tsne_std.cluster_centers_
+tsne_close_std = closest_points_to_centroids(cluster_tsne_std, tsne_on_std_data)
+df['tsne-cluster-results'] = 0
+df.loc[tsne_close_std, 'tsne-cluster-results'] = 1
 
 # 3. K-means clustering on standardized data, then visualize using t-SNE
 kmeans_tsne_unstd = kmeans.fit(std_sets)
@@ -169,5 +194,22 @@ sns.scatterplot(
 )
 plt.title("PCA visualization (Unstandardised Data)")
 plt.show()
+
+# %%
+
+plt.figure()
+sns.distplot(
+    df['compactness'], kde=True, bins=30,
+    label='Compactness Distribution', kde_kws={'bw': 0.2}
+)
+sns.rugplot(
+    df[df['tsne-cluster-results'] == 1]['compactness'],
+    color='red', label='Clustering on tsne results'
+)
+plt.legend()
+plt.title("Sampled points")
+plt.show()
+
+
 
 # %%
