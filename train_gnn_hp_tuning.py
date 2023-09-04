@@ -3,12 +3,15 @@ import os
 import torch
 from networkx import Graph
 import networkx as nx
+from sklearn.model_selection import KFold
 import random
 import numpy as np
 import time
+import json
 import matplotlib.pyplot as plt
 from torch_geometric.data import Data
-from torch_geometric.data import DataLoader
+# from torch_geometric.data import DataLoader
+from torch_geometric.loader import DataLoader
 from matplotlib.ticker import MaxNLocator
 from sklearn.preprocessing import LabelEncoder
 from torch_geometric.nn import GCNConv, global_mean_pool
@@ -18,6 +21,7 @@ from images.utils import load_image
 from graphical_model.utils import graphical_model
 from graphical_model_cython import build_graph
 from multiprocessing import Pool, cpu_count
+from concurrent.futures import ProcessPoolExecutor, as_completed
 from sklearn.model_selection import train_test_split
 
 class GNN(torch.nn.Module):
@@ -37,7 +41,7 @@ class GNN(torch.nn.Module):
         return F.softmax(x, dim=1)
 
 
-def train():
+def train(model, optimizer, criterion, train_loader):
     model.train()
     total_loss = 0
     for data in train_loader:
@@ -50,7 +54,7 @@ def train():
     return total_loss / len(train_loader)
 
 
-def validate():
+def validate(model, criterion, val_loader):
     model.eval()
     total_loss = 0
     with torch.no_grad():
@@ -61,7 +65,7 @@ def validate():
     return total_loss / len(val_loader)
 
 
-def test():
+def test(model, test_loader, test_graphs):
     model.eval()
     correct = 0
     with torch.no_grad():
@@ -70,68 +74,14 @@ def test():
             pred = out.argmax(dim=1)
             correct += (pred == data.y).sum().item()
     return correct / len(test_graphs)
-# %
-def make_graph(nodes, edges, attrs, d=0.005):
-    g = Graph()
-    edges = (edges > d) * edges
-    #  Add nodes
-    for index, row in nodes.iterrows():
-        g.add_node(index)
-
-    for i in range(edges.shape[0]):
-        for j in range(edges.shape[1]):
-            if edges[i, j] != 0:
-                g.add_edge(i, j, weight=edges[i, j])
-
-    for index, row in attrs.iterrows():
-        for col, attr_value in row.items():
-            g.nodes[index][col] = attr_value
-
-    for node, data in g.nodes(data=True):
-        for key, value in data.items():
-            if isinstance(value, list):
-                data[key] = ','.join(map(str, value))
-    return g
-
-def img_to_graph(image, delta):
-    img_size = 50
-    img = load_image(
-        image,
-        [img_size, img_size]
-    )
-
-    img_float = img.astype(np.float64)
-    nodes_ls, edges_ls, attr_ls = graphical_model(
-        img=img_float,
-        return_spp=True,
-        alpha=0.5,
-        set_type="fuzzy",
-        fuzzy_cutoff=delta
-    )
-
-    g1 = make_graph(nodes_ls, edges_ls, attr_ls)
-    return g1
-#%
 
 def run_experiment(delta):
-    def train(model, optimizer, criterion, train_loader):
-        model.train()
-        total_loss = 0
-        for data in train_loader:
-            optimizer.zero_grad()
-            out = model(data)
-            loss = criterion(out, data.y)
-            loss.backward()
-            optimizer.step()
-            total_loss += loss.item()
-        return total_loss / len(train_loader)
-    images = [f"../dtd/images/dotted/{file}" for file in os.listdir("../dtd/images/dotted")]
-    images += [f"../dtd/images/fibrous/{file}" for file in os.listdir("../dtd/images/fibrous")]
-    delta = 10
-    graphs = []
 
-    for image in tqdm(images[:10]):
-        G = img_to_graph(image, delta)
+    graph_files = [f"../graphical_models/fuzzy_sets_{delta}/{dir}" for dir in os.listdir(f"../graphical_models/fuzzy_sets_{delta}")]
+
+    graphs = []
+    for file in graph_files:
+        G = nx.read_graphml(file)
         node_features = []
         for _, data in G.nodes(data=True):
             features = [data[attr] for attr in data]
@@ -142,11 +92,10 @@ def run_experiment(delta):
             source, target = edge
             edge_indices.append([int(source), int(target)])
         edge_indices = torch.tensor(edge_indices, dtype=torch.long).t().contiguous()
-        graph_label = image.split("/")[-1].split("_")[0]
+        graph_label = file.split("/")[-1].split("_")[0]
         data = Data(x=node_features, edge_index=edge_indices, y=graph_label)
         graphs.append(data)
-
-    # %%Collect all the labels
+    # Collect all the labels
     labels = [data.y for data in graphs]
     encoder = LabelEncoder()
     encoded_labels = encoder.fit_transform(labels)
@@ -159,39 +108,43 @@ def run_experiment(delta):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.005)
     criterion = torch.nn.CrossEntropyLoss()
-
-    train_graphs, test_graphs = train_test_split(graphs, test_size=0.2)
-    train_loader = DataLoader(train_graphs, batch_size=32, shuffle=True)
-    test_loader = DataLoader(test_graphs, batch_size=32)
-
-    for epoch in range(10):
-        train_loss = train(model, optimizer, criterion, train_loader) 
-        # val_loss = validate()
-        # print(f"Epoch {epoch+1}, Train Loss: {train_loss}, Val Loss: {1}")
-
-    test_accuracy = test()
-    return test_accuracy
-    # print(f"Test accuracy is {test_accuracy}")
-
-def main():
-    # Set a range for delta
-    delta_values = [5, 10]  # modify this as per your requirements
-
-    # Determine the number of cores to use (we'll use 10 cores as you specified)
-    num_cores = 4
-
-    # Create a Pool of processes
-    with Pool(num_cores) as p:
-        accuracies = p.map(run_experiment, delta_values)
-
-    # Combine delta_values and their accuracies into a dictionary
-    results = dict(zip(delta_values, accuracies))
     
-    print(results)
+    kf = KFold(n_splits=5, shuffle=True, random_state=42)
 
-    best_delta = max(results, key=results.get)
-    print(f"The best delta value is {best_delta} with an accuracy of {results[best_delta]}")
+    fold_splits = []
+    k=1
+    accs =[]
+    for train_index, test_index in kf.split(graphs):
+        train_graphs = [graphs[i] for i in train_index]
+        test_graphs = [graphs[i] for i in test_index]
+
+        train_loader = DataLoader(train_graphs, batch_size=32, shuffle=True)
+        test_loader = DataLoader(test_graphs, batch_size=32)
+        # Actual training loop
+        for epoch in range(100):
+            train_loss = train(model, optimizer, criterion, train_loader)
+
+        test_accuracy = test(model, test_loader, test_graphs)
+        accs.append(test_accuracy)
+    result = {"accuracies": accs}
+    with open(f'../graphical_models/results/{delta}.json', 'w') as f:
+        json.dump(result, f)
+    
+
 
 if __name__ == "__main__":
-    main()
-# %%
+    ds = [i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
+    ds = ds[:5]
+    n_cores = cpu_count() - 2
+    print(f'Running process on {n_cores} cores')
+
+    with ProcessPoolExecutor(max_workers=n_cores) as executor:
+        # Setup tqdm
+        future_to_detail = {(executor.submit(run_experiment, d)): (d) for d in ds}
+
+        for future in tqdm(as_completed(future_to_detail), total=len(ds)):
+            try:
+                future.result()  # retrieve results if there are any
+            except Exception as e:
+                d = future_to_detail[future]
+                print(f"Error processing set with delta {d}. Error: {e}")

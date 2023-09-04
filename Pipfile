@@ -43,6 +43,9 @@ tqdm = "==4.65.1"
 pot = "==0.4.0"
 umap-learn = "==0.5.3"
 xgboost = "==1.7.6"
+torch = "*"
+cython = "*"
+torch-geometric = "*"
 
 [dev-packages]
 ipykernel = "*"
