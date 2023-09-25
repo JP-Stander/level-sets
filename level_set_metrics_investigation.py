@@ -3,7 +3,7 @@ import os
 import cv2
 from matplotlib import pyplot as plt
 import seaborn as sns
-from skimage.measure import label, regionprops
+from skimage.measure import regionprops, perimeter, label
 from skimage.morphology import convex_hull_image
 import pandas as pd
 import numpy as np
@@ -25,13 +25,19 @@ def get_metrics(level_set):
         orientation = region.orientation
         comp1 = region.area / (perim ** 2)
         convex_image = convex_hull_image(region.image)
-        convex_perimeter = np.sum(convex_image)  # Approximation
-        convexity = perim / convex_perimeter
+        convex_area = np.sum(convex_image)  # Area of convex hull
+        
+        convex_perimeter = perimeter(convex_image)  # Better approximation for convex perimeter
+        
+        # Convexity using perimeter
+        convexity_perimeter = perim / convex_perimeter
+        # Convexity using area
+        convexity_area = region.area / convex_area
     comp2 = compactness(level_set)
     eln = elongation(level_set)
     wth = width_to_height(level_set)
     angle = get_angle(level_set)
-    return aspect_ratio, extent, eln, orientation, comp1, comp2, convexity, bbox_area, wth, angle
+    return aspect_ratio, extent, eln, orientation, comp1, comp2, convexity_perimeter, convexity_area, bbox_area, wth, angle
 
 # %%
 
@@ -42,13 +48,13 @@ for folder in folders:
 
 metrics_keys = [
     "aspect_ratio", "extent", "eln", "orientation",
-    "comp1", "comp2", "convexity", "bbox_area", "wth", "angle"
+    "comp1", "comp2", "convexity_perimeter", "convexity_area", "bbox_area", "wth", "angle"
 ]
 
 # Initialize metrics dictionary
 metrics = {folder: {key: [] for key in metrics_keys} for folder in folders}
 
-for image in tqdm(images):
+for image in tqdm(images[:5]):
     img = load_image(image, [50,50])
     level_sets = get_level_sets(img)
     level_sets = get_fuzzy_sets(img, 10, 8)
