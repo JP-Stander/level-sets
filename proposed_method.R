@@ -3,9 +3,10 @@ library(readr)  # For reading CSV files
 library(dplyr)  # For data manipulation
 library(glmnet) # For logistic regression
 library(boot)
+library(caret)
 
-X <- read.csv("LogRegX.csv")  # Replace "X.csv" with the path to your X file
-y <- read.csv("LogRegy.csv")  # Replace "y.csv" with the path to your y file
+X <- read.csv("level-sets/LogRegX.csv")  # Replace "X.csv" with the path to your X file
+y <- read.csv("level-sets/LogRegy.csv")  # Replace "y.csv" with the path to your y file
 
 
 merged_data <- merge(X, y, by = "X")
@@ -46,8 +47,7 @@ accuracy <- mean(predictions == test_data$target)
 cat("Accuracy:", accuracy, "\n")
 
 # Cross validation
-library(caret)
-library(glmnet)
+
 
 # Assuming X and y are data.frame and vector respectively
 
@@ -61,14 +61,14 @@ for (fold in kf) {
   # Subset the data for this fold
   X_train <- merged_data[fold, , drop = FALSE]
   X_test <- merged_data[-fold, , drop = FALSE] %>% select(-target)
-  y_test <- merged_data[-fold,] %>% select(target)
-  
+  y_test <- merged_data[-fold, ] %>% select(target)
+
   # Train logistic regression
   model = glm(target ~ ., data = X_train, family = "binomial")
   # Predict and calculate accuracy
   predictions <- as.integer(predict(model, newdata = X_test, type = "response") > 0.5)
   accuracy <- mean(predictions == y_test)
-  
+
   accs$`Logistic Regression` <- c(accs$`Logistic Regression`, accuracy)
 }
 
@@ -76,6 +76,5 @@ for (fold in kf) {
 print(mean(accs$`Logistic Regression`))
 
 library(xtable)
-latex_code = xtable(summary(model)$coefficients, digits=4)
+latex_code <- xtable(summary(model)$coefficients, digits = 4)
 print(latex_code)
-

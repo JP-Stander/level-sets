@@ -33,7 +33,7 @@ def make_graph(nodes, edges, attrs, d=0.005):
 
 
 def img_to_graph(image, d):
-    img_size = 50
+    img_size = 100
     img = load_image(
         image,
         [img_size, img_size]
@@ -58,7 +58,7 @@ def img_to_graph(image, d):
     )
 
     g2 = make_graph(nodes_fs, edges_fs, attr_fs)
-    write_graphml(g2, f"../graphical_models/fuzzy_sets_{d}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+    write_graphml(g2, f"../graphical_models_100/fuzzy_sets_{d}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
 
     # nodes_fs2, edges_fs2, attr_fs2 = graphical_model(
     #     img=img,
@@ -79,11 +79,11 @@ if __name__ == '__main__':
     images_path = "../dtd/images/"
     images = ["../dtd/images/dotted/" + file for file in listdir("../dtd/images/dotted")]
     images += ["../dtd/images/fibrous/" + file for file in listdir("../dtd/images/fibrous")]
-    ds = [i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
+    ds = [10]#[i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
     
     for d in ds:
-        if not os.path.exists(f"../graphical_models/fuzzy_sets_{d}"):
-            os.makedirs(f"../graphical_models/fuzzy_sets_{d}")
+        if not os.path.exists(f"../graphical_models_100/fuzzy_sets_{d}"):
+            os.makedirs(f"../graphical_models_100/fuzzy_sets_{d}")
 
     n_cores = cpu_count() - 2
     print(f'Running process on {n_cores} cores')
@@ -98,6 +98,3 @@ if __name__ == '__main__':
             except Exception as e:
                 image, d_value = future_to_detail[future]
                 print(f"Error processing image: {image} with d_value: {d_value}. Error: {e}")
-
-
-# %%

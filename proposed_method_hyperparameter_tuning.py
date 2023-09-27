@@ -213,3 +213,39 @@ for num_clusters in tqdm(range(10,250,10)):
         bacc=acc
         bn = num_clusters
         print(f"Best accuracy of {bacc} with num_clusters as {num_clusters}")
+
+# %% statsmodel regression
+
+import statsmodels.api as sm
+feat_names = [f'g{i+1}' for i in range(num_clusters)] + \
+    ["g2_1"] + \
+    [f"g3_{i+1}" for i in range(2)] + \
+    [f"g4_{i+1}" for i in range(6)]
+
+X_lr = [X[i].reshape(-1,1) for i in range(len(X))]
+X_lr = np.concatenate(X_lr, axis=1)
+X_lr = pd.DataFrame(X_lr.transpose(), columns=feat_names)
+# X_lr = X_lr.iloc[:, :10]
+# X_lr.iloc[:, :10]
+sum_first_10 = X_lr.iloc[:, :10].sum(axis=1)
+sum_last = X_lr.iloc[:, -9:].sum(axis=1)
+X_lr.iloc[:, :10] = X_lr.iloc[:, :10].div(sum_first_10, axis=0)
+X_lr.iloc[:, -9:] = X_lr.iloc[:, -9:].div(sum_last, axis=0)
+# X_lr = X_lr*100
+X_lr = sm.add_constant(X_lr)
+y_lr = [i for i in y]
+
+X_train, X_test = X_lr.iloc[train_index], X_lr.iloc[test_index]
+y_train, y_test = [y[i] for i in train_index], [y[i] for i in test_index]
+model = sm.Logit(y_train, X_train)
+result = model.fit()
+print(result.summary())
+y_hat = (result.predict(X_test) > 0.5).astype(int)
+print(np.mean(y_hat==y_test))
+# print(result.summary().as_latex())
+#
+
+coefficients = result.params
+sorted_by_absolute = coefficients.reindex(coefficients.abs().sort_values(ascending=False).index)
+top_5_original_values = sorted_by_absolute
+print(top_5_original_values)
