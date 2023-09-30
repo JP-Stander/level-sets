@@ -209,6 +209,8 @@ _reference_subgraphs = {
     }
 }
 
+# %%
+
 def _count_subgraphs(main_graph, subgraphs):
     """Count the number of unique subgraphs present in the main graph"""
     counts = {}

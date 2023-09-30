@@ -9,7 +9,7 @@ from images.utils import load_image
 from graphical_model.utils import graphical_model
 
 #%%
-def _make_graph(nodes, edges, attrs, d=0.005):
+def make_graph(nodes, edges, attrs, d=0.005):
     g = Graph()
     edges = (edges > d) * edges
     #  Add nodes
@@ -31,7 +31,7 @@ def _make_graph(nodes, edges, attrs, d=0.005):
                 data[key] = ','.join(map(str, value))
     return g
 
-def img_to_graph(image, graph_location, d=10, img_size=100):
+def img_to_graph(image, graph_location, d=10, img_size=100, edge_cut_off=0.005, return_graph=False, metric_names='all'):
     img = load_image(
         image,
         [img_size, img_size]
@@ -43,7 +43,44 @@ def img_to_graph(image, graph_location, d=10, img_size=100):
         alpha=0.5,
         set_type="fuzzy",
         fuzzy_cutoff=d,
+        metric_names=metric_names
     )
 
-    g = _make_graph(nodes_fs, edges_fs, attr_fs)
-    write_graphml(g, f"{graph_location}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+    g = make_graph(nodes_fs, edges_fs, attr_fs, edge_cut_off)
+    if return_graph is True:
+        return g
+    else:
+        write_graphml(g, f"{graph_location}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
+
+def get_img_nea(image, d=10, img_size=100, metric_names="all"):
+    img = load_image(
+        image,
+        [img_size, img_size]
+    )
+
+    nodes_fs, edges_fs, attr_fs = graphical_model(
+        img=img,
+        return_spp=True,
+        alpha=0.5,
+        set_type="fuzzy",
+        fuzzy_cutoff=d,
+        metric_names=metric_names
+    )
+    return nodes_fs, edges_fs, attr_fs
+
+def image_to_histogram(descriptors, kmeans):
+    hist = np.zeros(kmeans.n_clusters)
+    labels = kmeans.predict(descriptors)
+    for label in labels:
+        hist[label] += 1
+    return hist
+
+
+def process_sublist(sublist_descriptors, sublist_add_features, kmeans):
+    # Convert each descriptor to histogram
+    histograms = [image_to_histogram(desc, kmeans) for desc in sublist_descriptors]
+    
+    # Concatenate histograms with the additional features
+    full = [np.concatenate((hist, add_feat)) for hist, add_feat in zip(histograms, sublist_add_features)]
+    
+    return full
