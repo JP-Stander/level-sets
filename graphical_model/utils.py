@@ -20,7 +20,7 @@ import igraph as ig
 
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, current_script_directory)
-from level_sets.metrics import compactness, elongation  # noqa: E402
+from level_sets.metrics import get_metrics  # noqa: E402
 from level_sets.utils import get_level_sets, get_fuzzy_sets  # noqa: E402
 import spatio_distance  # noqa: E402
 
@@ -46,7 +46,8 @@ def graphical_model(
     size_proportion=False,
     ls_spatial_dist="euclidean",
     ls_attr_dist="cityblock",
-    centroid_method="mean"
+    centroid_method="mean",
+    metric_names = "all"
 ):
 
     should_normalise = normalise_gray and img.max() > 1
@@ -54,7 +55,7 @@ def graphical_model(
         get_fuzzy_sets(img, fuzzy_cutoff, connectivity) + 1
     uni_level_sets = pd.unique(level_sets.flatten())
     results = []
-    X, Y = img.shape
+    width, _ = img.shape
 
     for ls in uni_level_sets:
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
@@ -66,23 +67,22 @@ def graphical_model(
         centroid = mapping(centroid)['coordinates']
         intensity = set_value / 255 if should_normalise else set_value
 
-        results.append({
+        metrics = get_metrics(level_set, metric_names=metric_names)
+        result = {**metrics, **{
             "level-set": ls,
-            "x-coor": centroid[0] / X if normalise_pixel_index else centroid[0],
-            "y-coor": centroid[1] / X if normalise_pixel_index else centroid[1],
+            "x-coor": centroid[0] / width if normalise_pixel_index else centroid[0],
+            "y-coor": centroid[1] / width if normalise_pixel_index else centroid[1],
             "intensity": intensity,
             "size": set_size,
-            "compactness": compactness(level_set),
-            "elongation": elongation(level_set),
             "pixel_indices": subset
-        })
+        }}
+        results.append(result)
 
     spp = pd.DataFrame(results)
-    spp_np = spp.drop(labels=["pixel_indices"], axis=1).values.astype(float)
-    nodes = spp.iloc[:, 1:3]
+    nodes = spp.loc[:, ["x-coor", "y-coor"]]
     edges = np.asarray(
         spatio_distance.calculate_distance(
-            spp_np,
+            np.array(spp[["x-coor", "y-coor"]+list(metrics.keys())]),
             ls_spatial_dist,
             ls_attr_dist,
             alpha

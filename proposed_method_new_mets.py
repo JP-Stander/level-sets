@@ -9,6 +9,8 @@ from skimage.measure import label, regionprops
 from skimage.morphology import convex_hull_image
 from sklearn.base import clone
 from sklearn.cluster import KMeans
+from sklearn.utils import resample
+from scipy.stats import percentileofscore
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
@@ -84,8 +86,9 @@ def get_metrics(level_set):
     return extent, convexity , eln, comp
 
 # %% Build dataset
+graph_location = "../graphical_models_100/fuzzy_sets_10"
 folders = ["dotted", "fibrous"]
-graph_files = [f"../graphical_models_full/fuzzy_sets_10/{folder}/{dir}" for folder in folders for dir in os.listdir(f"../graphical_models_full/fuzzy_sets_10/{folder}")]
+graph_files = [f"{graph_location}/{folder}/{dir}" for folder in folders for dir in os.listdir(f"{graph_location}/{folder}")]
 features_names = ['compactness', 'elongation', 'extent', 'convexity', 'intensity']#, 'pixel_indices']
 node_counts = pd.DataFrame(np.zeros((len(graph_files),len(features_names))), columns=features_names)
 
@@ -169,50 +172,7 @@ acc = np.mean(accs)
 #     b_n = num_clusters
 #     print(f"Best accuracy: {b_acc} for n {b_n}")
 
-# %% For R
-feat_names = [f'g{i+1}' for i in range(num_clusters)] + \
-    ["g2_1"] + \
-    [f"g3_{i+1}" for i in range(2)] + \
-    [f"g4_{i+1}" for i in range(6)]
-outX = pd.DataFrame(np.concatenate([x.reshape(1,-1) for x in X], axis=0), columns=feat_names)
-outy = pd.DataFrame(y)
-outX.to_csv("LogRegX.csv")
-outy.to_csv("LogRegy.csv")
-R_coefs = """
-(Intercept) -2.0123595  3.1726485  -0.634   0.5259  
-g1           0.1103955  0.1492605   0.740   0.4595  
-g2           0.1103931  0.0857147   1.288   0.1978  
-g3           0.1106376  0.1304578   0.848   0.3964  
-g4          -0.5570180  0.4084140  -1.364   0.1726  
-g5           0.7031389  0.3312366   2.123   0.0338 *
-g6           0.1578727  0.2391890   0.660   0.5092  
-g7          -0.0324630  0.2613654  -0.124   0.9012  
-g8           0.5684944  0.2677635   2.123   0.0337 *
-g9          -0.5659807  0.3029661  -1.868   0.0617 .
-g10          0.4312265  0.2561560   1.683   0.0923 .
-g2_1        -0.1081934  0.0669140  -1.617   0.1059  
-g3_1         0.0144471  0.0150121   0.962   0.3359  
-g3_2         0.0463102  0.0267732   1.730   0.0837 .
-g4_1        -0.0155159  0.0102665  -1.511   0.1307  
-g4_2         0.0001681  0.0040787   0.041   0.9671  
-g4_3        -0.0391328  0.0317266  -1.233   0.2174  
-g4_4         0.0103465  0.0118997   0.869   0.3846  
-g4_5         0.0008233  0.0094535   0.087   0.9306  
-g4_6        -0.0033753  0.0036887  -0.915   0.3602  
-"""
-
-# Create dictionary from data
-lines = R_coefs.strip().split('\n')
-coefs = {}
-for line in lines:
-    parts = line.split()
-    variable_name = parts[0]
-    coefficient = float(parts[1])
-    coefs[variable_name] = coefficient
-
 #%% Bootstrapping
-from sklearn.utils import resample
-from scipy.stats import percentileofscore
 
 num_bootstrap_iterations = 1000 # You can adjust this as needed
 coef_samples = np.zeros((num_bootstrap_iterations, X[0].shape[0]))
@@ -232,73 +192,105 @@ contains_zero = []
 for i, (lower, upper) in enumerate(zip(confidence_intervals[0], confidence_intervals[1])):
     if lower <= 0 <= upper:
         contains_zero.append(i)
+coefficients = confidence_intervals[:, :10]
 
+# Calculate mean and 95% confidence interval for each coefficient
+means = np.mean(coefficients, axis=0)
+conf_int = np.percentile(coefficients, [2.5, 97.5], axis=0)
+
+# Create LaTeX table header
+latex_table = "\\begin{tabular}{ccc}\n"
+latex_table += "Coefficient & Mean & 95\\% Confidence Interval \\\\\n"
+latex_table += "\\hline\n"
+
+# Add rows for each coefficient
+for i in range(10):
+    coeff_name = f"g_{i + 1}"
+    mean_val = means[i]
+    conf_int_low, conf_int_high = conf_int[:, i]
+    
+    # Format values to a reasonable number of decimal places
+    mean_val_str = f"{mean_val:.4f}"
+    conf_int_str = f"({conf_int_low:.4f}, {conf_int_high:.4f})"
+    
+    # Add the row to the LaTeX table
+    latex_table += f"{coeff_name} & {mean_val_str} & {conf_int_str} \\\\\n"
+
+# Close the LaTeX table
+latex_table += "\\end{tabular}"
+
+# Print or save the LaTeX table
+print(latex_table)
 #%% Fit final model
 clf = LogisticRegression(max_iter=1000, solver='liblinear', penalty="l2")
 clf.fit(X,y)
 # %% visualise
-img_name = "dotted_0157" #["dotted_0188", "dotted_0111", ""dotted_0156""]
-img_name = "fibrous_0116"#["fibrous_0191", "fibrous_0108", "fibrous_0116"]
+img_name = "dotted_0111" #["dotted_0188", "dotted_0111", ""dotted_0180""]
+# img_name = "fibrous_0116"#["fibrous_0191", "fibrous_0108", "fibrous_0116"]
+feat_names = [f'g{i+1}' for i in range(num_clusters)] + \
+    ["g2_1"] + \
+    [f"g3_{i+1}" for i in range(2)] + \
+    [f"g4_{i+1}" for i in range(6)]
+for img_name in ["dotted_0188", "dotted_0111", "dotted_0180", "fibrous_0191", "fibrous_0108", "fibrous_0116"]:
+    img_name = img_name.split(".")[0]
+    folder = img_name.split('_')[0]
+    img_file = f"../dtd/images/{folder}/{img_name}.jpg"
+    img_graph = f"{graph_location}/{folder}/{img_name}_graph.graphml"
 
-img_name = img_name.split(".")[0]
-folder = img_name.split('_')[0]
-img_file = f"../dtd/images/{folder}/{img_name}.jpg"
-img_graph = f"../graphical_models_full/fuzzy_sets_10/{folder}/{img_name}_graph.graphml"
+    img = load_image(img_file, [100,100])
+    img = img/255
+    graph = nx.read_graphml(img_graph)
 
-img = load_image(img_file, [50,50])
-img = img/255
-graph = nx.read_graphml(img_graph)
+    level_sets = get_fuzzy_sets(img, 10/255, 8)
+    uls = pd.unique(level_sets.flatten())
+    coefs = {name:0 for name in feat_names}
+    for i, key in enumerate(coefs.keys()):
+        coefs[key] = clf.coef_[0,i]
+    coefs_plane = np.zeros(img.shape)
+    pred_df = pd.DataFrame(0, index=[0], columns=feat_names)
 
-level_sets = get_fuzzy_sets(img, 10/255, 8)
-uls = pd.unique(level_sets.flatten())
-coefs = {name:0 for name in feat_names}
-for i, key in enumerate(coefs.keys()):
-    coefs[key] = clf.coef_[0,i]
-coefs_plane = np.zeros(img.shape)
-pred_df = pd.DataFrame(0, index=[0], columns=feat_names)
+    for ls in uls:
+        set = np.zeros(img.shape)
+        set[level_sets==ls] = 1
 
-for ls in uls:
-    set = np.zeros(img.shape)
-    set[level_sets==ls] = 1
+        set_attr = pd.DataFrame(0, index = [0], columns=["compactness",'elongation','extent','convexity','intensity'])
+        extent, convexity, eln, cmp = get_metrics(set)
+        set_attr.loc[0, 'compactness'] = cmp
+        set_attr.loc[0, 'elongation'] = eln
+        set_attr.loc[0, 'extent'] = extent
+        set_attr.loc[0, 'convexity'] = convexity
+        set_attr.loc[0, 'intensity'] = img[level_sets==ls].mean()
+        min_idx = kmeans.predict(set_attr)
+        coefs_plane[level_sets==ls] = coefs[f"g{min_idx[0]+1}"] if min_idx[0] not in contains_zero else None
+        pred_df.loc[0, f"g{min_idx[0]+1}"] += 1
 
-    set_attr = pd.DataFrame(0, index = [0], columns=["compactness",'elongation','extent','convexity','intensity'])
-    extent, convexity, eln, cmp = get_metrics(set)
-    set_attr.loc[0, 'compactness'] = cmp
-    set_attr.loc[0, 'elongation'] = eln
-    set_attr.loc[0, 'extent'] = extent
-    set_attr.loc[0, 'convexity'] = convexity
-    set_attr.loc[0, 'intensity'] = img[level_sets==ls].mean()
-    min_idx = kmeans.predict(set_attr)
-    coefs_plane[level_sets==ls] = coefs[f"g{min_idx[0]+1}"] if min_idx[0] not in contains_zero else None
-    pred_df.loc[0, f"g{min_idx[0]+1}"] += 1
+    subgraph_counts = count_unique_subgraphs(graph,4)
+    sorted_sg = dict(sorted(subgraph_counts.items()))
 
-subgraph_counts = count_unique_subgraphs(graph,4)
-sorted_sg = dict(sorted(subgraph_counts.items()))
+    # Extract the values in the desired order
+    values = []
+    for key in sorted_sg.keys():
+        sub_dict = sorted_sg[key]
+        for sub_key in sorted(sub_dict):
+            values.append(sub_dict[sub_key])
 
-# Extract the values in the desired order
-values = []
-for key in sorted_sg.keys():
-    sub_dict = sorted_sg[key]
-    for sub_key in sorted(sub_dict):
-        values.append(sub_dict[sub_key])
+    # Convert the list of values to a numpy array with shape (9, 1)
+    pred_df.iloc[0,-9:] = np.array(values).reshape(-1, )
+    yhat = clf.predict(pred_df)
 
-# Convert the list of values to a numpy array with shape (9, 1)
-pred_df.iloc[0,-9:] = np.array(values).reshape(-1, )
-yhat = clf.predict(pred_df)
+    plt.figure()
+    plt.imshow(img, 'gray')
+    plt.imshow(
+        coefs_plane, alpha=0.5, 
+        vmin=np.min(clf.coef_),#np.min([a for a in coefs.values()]), 
+        vmax=np.max(clf.coef_)#np.max([a for a in coefs.values()])
+    )
+    plt.colorbar()
+    plt.axis("off")
+    plt.savefig(f"../paper3_results/{img_name}_heatmap.png")
 
-plt.figure()
-plt.imshow(img, 'gray')
-plt.imshow(
-    coefs_plane, alpha=0.5, 
-    vmin=np.min(clf.coef_),#np.min([a for a in coefs.values()]), 
-    vmax=np.max(clf.coef_)#np.max([a for a in coefs.values()])
-)
-plt.colorbar()
-plt.axis("off")
-plt.savefig(f"../paper3_results/{img_name}_heatmap.png")
-
-print(f"Predicted class: {'dotted(0)' if yhat[0] == 0 else 'firbous(1)'}")
-print(f"Actual class : {folder}")
+    print(f"Predicted class: {'dotted(0)' if yhat[0] == 0 else 'firbous(1)'}")
+    print(f"Actual class : {folder}")
 # %%
 print(f"dotted is class {folders.index('dotted')}")
 print(f"fibrous is class {folders.index('fibrous')}")

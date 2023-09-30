@@ -1,6 +1,8 @@
 import cv2
 import numpy as np
 from skimage import measure
+from skimage.morphology import convex_hull_image
+from skimage.measure import regionprops, perimeter, label
 # from skimage.feature import greycomatrix, greycoprops
 from .utils import cut_level_set
 # metrics for level-sets
@@ -28,7 +30,6 @@ def compactness(level_set):
 
     return compactness
 
-
 def elongation(level_set):
     # This functions calculates the elongatin of all the pulses in an image, it takes as
     # input the images with all the pulses and call the rest of the functions by its self
@@ -44,13 +45,11 @@ def elongation(level_set):
 
     return elongation
 
-
 def area(level_set):
     level_set = np.array(level_set)
     level_set = cut_level_set(level_set)
     area = sum(sum(level_set))
     return area
-
 
 def perimeter(level_set):
 
@@ -123,7 +122,6 @@ def get_angle(image):
     
     return theta_deg
 
-
 def major_axis(level_set):
     level_set = np.array(level_set)
     level_set = cut_level_set(level_set)
@@ -137,7 +135,6 @@ def major_axis(level_set):
 
     return length, angle, major_axis_coordinates
 
-
 def _get_enclosing_circle(level_set):
     level_set = np.array(level_set)
     level_set = cut_level_set(level_set).astype(int)
@@ -148,7 +145,6 @@ def _get_enclosing_circle(level_set):
     enclosing_circle = cv2.minEnclosingCircle(points)
 
     return (enclosing_circle[1] * 2 / 10) ** 2
-
 
 def _pixels_to_points(pixels):
     '''Returns coordinates of corner of pixels of each border pixel'''
@@ -182,6 +178,54 @@ def _pixels_to_points(pixels):
         points[1].append(locs[i, 1] - 0.5)
 
     return np.array(points).transpose()
+
+def _get_bbox_area(region):
+    minr, minc, maxr, maxc = region.bbox
+    return (maxr-minr)*(maxc-minc)
+
+def _get_aspect_ratio(region):
+    minr, minc, maxr, maxc = region.bbox
+    return (maxc - minc) / (maxr - minr)
+
+def _get_extent(region):
+    minr, minc, maxr, maxc = region.bbox
+    return region.area / ((maxr - minr) * (maxc - minc))
+
+def _get_convexity(region, area):
+    convex_image = convex_hull_image(region.image)
+    convex_area = np.sum(convex_image)
+    return convex_area / area
+
+def get_metrics(data, indecis=False, metric_names = ["all"]):
+    if indecis is True:
+        pixels = [a for a in eval(data.get("pixel_indices"))] if ")," in data.get("pixel_indices") else [eval(data.get("pixel_indices"))]
+        img_size = max(max(a[0] for a in pixels), max(a[1] for a in pixels))
+        level_set = np.zeros((img_size+1, img_size+1))
+        rows, cols = zip(*pixels)
+        level_set[rows, cols] = 1
+        level_set=level_set.astype(int)
+    else:
+        level_set = data.astype(int)
+    regions = regionprops(level_set)
+    region = regions[0] # Since there will always be only 1 region
+
+    metric_functions = {
+        "angle": lambda: get_angle(level_set),
+        "area": lambda: area(level_set),
+        "compactness": lambda: compactness(level_set),
+        "elongation": lambda: elongation(level_set),
+        "width_to_height": lambda: width_to_height(level_set),
+        "bbox_area": lambda: _get_bbox_area(region),
+        "aspect_ratio": lambda: _get_aspect_ratio(region),
+        "extent": lambda: _get_extent(region),
+        "orientation": lambda: region.orientation,
+        "convexity": lambda: _get_convexity(region, area(level_set))
+    }
+
+    metric_names = list(metric_functions.keys()) if "all" in metric_names else metric_names
+    metrics = {name: metric_functions[name]() for name in metric_names}
+
+    return metrics
 
 
 # class GLCM:
@@ -238,7 +282,6 @@ def _get_major_axis(pulse):
 
     return (res[1] * 2 / 10) ** 2
 
-
 def major_axis_length(pulses):
     pulses = np.array(pulses)
     level_sets = measure.label(pulses, connectivity=1)
@@ -248,7 +291,6 @@ def major_axis_length(pulses):
         points = _pixels_to_points(pulse)
         axes[level_set] = _get_major_axis(points)
     return axes
-
 
 # def major_axis(pulses, ignore_0=True, return_length=True,
 #                return_coordinates=False, return_angle=False):
