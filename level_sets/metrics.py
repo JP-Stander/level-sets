@@ -45,11 +45,11 @@ def elongation(level_set):
 
     return elongation
 
-def area(level_set):
+def area(level_set, img_size):
     level_set = np.array(level_set)
     level_set = cut_level_set(level_set)
     area = sum(sum(level_set))
-    return area
+    return area/(img_size[0]*img_size[1])
 
 def perimeter(level_set):
 
@@ -120,7 +120,7 @@ def get_angle(image):
     # Convert to degrees
     theta_deg = np.degrees(theta)
     
-    return theta_deg
+    return theta_deg/180
 
 def major_axis(level_set):
     level_set = np.array(level_set)
@@ -194,9 +194,9 @@ def _get_extent(region):
 def _get_convexity(region, area):
     convex_image = convex_hull_image(region.image)
     convex_area = np.sum(convex_image)
-    return convex_area / area
+    return area/convex_area
 
-def get_metrics(data, indecis=False, metric_names = ["all"]):
+def get_metrics(data, indecis=False, metric_names = ["all"], img_size=[0,0]):
     if indecis is True:
         pixels = [a for a in eval(data.get("pixel_indices"))] if ")," in data.get("pixel_indices") else [eval(data.get("pixel_indices"))]
         img_size = max(max(a[0] for a in pixels), max(a[1] for a in pixels))
@@ -211,7 +211,7 @@ def get_metrics(data, indecis=False, metric_names = ["all"]):
 
     metric_functions = {
         "angle": lambda: get_angle(level_set),
-        "area": lambda: area(level_set),
+        "area": lambda: area(level_set, img_size),
         "compactness": lambda: compactness(level_set),
         "elongation": lambda: elongation(level_set),
         "width_to_height": lambda: width_to_height(level_set),
@@ -219,7 +219,7 @@ def get_metrics(data, indecis=False, metric_names = ["all"]):
         "aspect_ratio": lambda: _get_aspect_ratio(region),
         "extent": lambda: _get_extent(region),
         "orientation": lambda: region.orientation,
-        "convexity": lambda: _get_convexity(region, area(level_set))
+        "convexity": lambda: _get_convexity(region, area(level_set, img_size))
     }
 
     metric_names = list(metric_functions.keys()) if "all" in metric_names else metric_names

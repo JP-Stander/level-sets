@@ -6,8 +6,9 @@ import pickle
 from tqdm import tqdm
 from sklearn.cluster import KMeans
 from sklearn.utils import resample
+from sklearn.base import clone
 from sklearn.linear_model import LogisticRegression
-from config import num_bootstrap_iterations, experiment_loc
+from config import num_bootstrap_iterations, experiment_loc, num_clusters, classes
 import joblib
 
 # %%
@@ -30,7 +31,6 @@ for key in loaded_subgraphs:
 flattened_feats = [arr for key in loaded_feats for arr in loaded_feats[key]]
 all_descriptors = np.vstack(flattened_feats)
 
-num_clusters = 80
 kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
 
 lists_of_full = []
@@ -42,10 +42,12 @@ for key in loaded_feats.keys():
 
 X = []
 y = []
+y_label = []
 
 for class_index, sublist in enumerate(lists_of_full):
     X.extend(sublist)
     y.extend([class_index] * len(sublist))
+    y_label.extend([classes[class_index]] * len(sublist))
 
 
 coef_samples = np.zeros((num_bootstrap_iterations, X[0].shape[0]))
@@ -67,6 +69,7 @@ contains_zero = []
 coefficients = np.zeros((1, X[0].shape[0]))
 for i, (lower, upper) in enumerate(zip(confidence_intervals[0], confidence_intervals[1])):
     if not (lower <= 0 <= upper):
+        contains_zero.append(i)
         coefficients[:, i] = np.mean(coef_samples[:,i])
 
 # Calculate mean and 95% confidence interval for each coefficient
@@ -81,13 +84,21 @@ else:
     intercept = np.mean(intercept_samples)
 print("Intercepts")
 print(intercept)
-# %%
-final_model = clf
 
-final_model.coef_ = coefficients
-final_model.intercept_ = np.array([intercept])
+# %%
+clf = LogisticRegression(max_iter=1000, solver='liblinear', penalty="l2")
+clf.fit(X, y)
+final_model = LogisticRegression(max_iter=1000, solver='liblinear', penalty="l2").fit(X, y)
+
+# final_model.coef_ = coefficients
+# final_model.intercept_ = np.array([intercept])
+print(f"Model accuracy: {clf.score(X, y)}")
+print(f"Model accuracy: {final_model.score(X, y)}")
 joblib.dump(final_model, f'{experiment_loc}/logistic_regression_model.pkl')
 joblib.dump(kmeans, f'{experiment_loc}/kmeans.pkl') 
 
+with open(f"{experiment_loc}/contains_zero.txt", "w") as f:
+    for item in contains_zero:
+        f.write("%s\n" % item)
 
 # %%

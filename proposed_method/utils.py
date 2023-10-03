@@ -31,10 +31,11 @@ def make_graph(nodes, edges, attrs, d=0.005):
                 data[key] = ','.join(map(str, value))
     return g
 
-def img_to_graph(image, graph_location, d=10, img_size=100, edge_cut_off=0.005, return_graph=False, metric_names='all'):
+def img_to_graph(image, graph_location, d=10, img_size=100, connectivity=8, edge_cut_off=0.005, return_graph=False, metric_names='all', trim=None):
     img = load_image(
         image,
-        [img_size, img_size]
+        [img_size, img_size],
+        trim=trim
     )
 
     nodes_fs, edges_fs, attr_fs = graphical_model(
@@ -43,7 +44,8 @@ def img_to_graph(image, graph_location, d=10, img_size=100, edge_cut_off=0.005, 
         alpha=0.5,
         set_type="fuzzy",
         fuzzy_cutoff=d,
-        metric_names=metric_names
+        metric_names=metric_names,
+        connectivity = connectivity
     )
 
     g = make_graph(nodes_fs, edges_fs, attr_fs, edge_cut_off)
@@ -52,10 +54,11 @@ def img_to_graph(image, graph_location, d=10, img_size=100, edge_cut_off=0.005, 
     else:
         write_graphml(g, f"{graph_location}/{image.split('/')[-1].split('.')[0]}_graph.graphml")
 
-def get_img_nea(image, d=10, img_size=100, metric_names="all"):
+def get_img_nea(image, d=10, img_size=100, connectivity=8, metric_names="all", trim=None):
     img = load_image(
         image,
-        [img_size, img_size]
+        [img_size, img_size],
+        trim = trim
     )
 
     nodes_fs, edges_fs, attr_fs = graphical_model(
@@ -64,7 +67,8 @@ def get_img_nea(image, d=10, img_size=100, metric_names="all"):
         alpha=0.5,
         set_type="fuzzy",
         fuzzy_cutoff=d,
-        metric_names=metric_names
+        metric_names=metric_names,
+        connectivity = connectivity
     )
     return nodes_fs, edges_fs, attr_fs
 

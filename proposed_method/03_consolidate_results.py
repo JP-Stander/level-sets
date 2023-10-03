@@ -10,7 +10,7 @@ import pandas as pd
 import pickle
 from tqdm import tqdm
 import networkx as nx
-from config import nodes_feature_names, classes, graphs_location, experiment_loc
+from config import nodes_feature_names, classes, graphs_location, experiment_loc, trim
 from subgraph.counter import count_unique_subgraphs
 warnings.simplefilter(action='ignore', category=Warning)
 

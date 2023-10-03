@@ -1,10 +1,12 @@
 # %%
 import os
-from config import classes, images_loc, graph_locs, ds, img_size, sets_feature_names
+from config import classes, images_loc, graph_locs, ds, img_size, sets_feature_names, trim, fs_connectivity, edge_delta
 from os import listdir, cpu_count
 from utils import img_to_graph
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from tqdm import tqdm
+import warnings
+warnings.simplefilter(action='ignore', category=Warning)
 
 # %%
 
@@ -29,9 +31,11 @@ if __name__ == '__main__':
                 image, 
                 graph_locs[clas][d_value],
                 d_value, img_size,
-                0.25,
+                fs_connectivity,
+                edge_delta,
                 False,
-                sets_feature_names
+                sets_feature_names,
+                trim
             ): (image, d_value, clas)
             for clas in classes
             for image in images[clas]

@@ -8,7 +8,7 @@ import seaborn as sns
 from tqdm import tqdm
 from scipy.stats import ks_2samp
 from matplotlib import pyplot as plt
-from config import classes, images_loc, img_size, fs_connectivity, fs_delta, sets_feature_names
+from config import classes, images_loc, img_size, fs_connectivity, fs_delta, sets_feature_names, trim
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, "/".join(current_script_directory.split("/")[:-1]))
 from images.utils import load_image
@@ -25,14 +25,14 @@ for clas in classes:
 metrics = {clas: [] for clas in classes}
 
 for image in tqdm(images):
-    img = load_image(image, [img_size, img_size])
+    img = load_image(image, [img_size, img_size], trim=trim)
     # level_sets = get_level_sets(img)
     level_sets = get_fuzzy_sets(img, fs_delta, fs_connectivity)
     uni_level_sets = pd.unique(level_sets.flatten())
     for i, ls in enumerate(uni_level_sets):
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = np.array(level_sets == ls)
-        metric_results = get_metrics(level_set.astype(int))
+        metric_results = get_metrics(level_set.astype(int), img_size=[img_size, img_size])
         clas = image.split("/")[-2]
         metrics[clas] += [metric_results]
 
@@ -84,21 +84,56 @@ image = images[0]
 sets_feature_names = [
     'compactness',
     'elongation',
-    'extent',
-    'convexity'
+    'angle',
+    'area'
 ]
-n,e,a = get_img_nea(image, d=10, img_size=100, metric_names=sets_feature_names)
+n,e,a = get_img_nea(image, d=10, img_size=100, connectivity=fs_connectivity, metric_names=sets_feature_names, trim=trim)
 
 #%%
-delta = 0.5
+delta = 0.25
 print(f"Number of edges greater than {delta}: {np.sum(e.flatten() > delta)/2}")
 print(f"Proportion of edges greater than {delta}: {np.mean(e.flatten() > delta)/2}")
 #%%
-g = make_graph(n, e, a, 0.5)
+g = make_graph(n, e, a, 0.25)
 nx.draw_networkx(
     g,
     with_labels=False,
     edge_color = "gray",
     node_size = 2,
 )
+# %%
+from config import graphs_location
+import networkx as nx
+import ast
+graph_files = [f"{graphs_location}/{clas}/{file}" for clas in classes for file in os.listdir(f"{graphs_location}/{clas}")]
+graph = nx.read_graphml(graph_files[0])
+image_var = np.zeros((100,100))
+def replace_values_in_image(image, data):
+    # Convert string representation of pixel indices into a list of tuples
+    pixel_indices = [a for a in eval(data.get("pixel_indices"))] if ")," in data.get("pixel_indices") else [eval(data.get("pixel_indices"))]
+
+    for index in pixel_indices:
+        image[index] = data["level-set"]
+
+for node, data in gr.nodes(data=True):
+    replace_values_in_image(image_var, data)
+
+plt.figure()
+plt.imshow(image_var)
+plt.show()
+
+#%%
+img = load_image('../../colab_alisa/control/C1510_PPP_T_20K_02.tif', [100,100], trim)
+return_spp=True
+set_type="fuzzy"
+fuzzy_cutoff=10
+normalise_pixel_index=False
+connectivity=8
+alpha=0.5
+normalise_gray=True
+size_proportion=False
+ls_spatial_dist="euclidean"
+ls_attr_dist="cityblock"
+centroid_method="mean"
+metric_names = sets_feature_names
 # %%

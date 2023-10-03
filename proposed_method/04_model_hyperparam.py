@@ -33,7 +33,7 @@ flattened_feats = [arr for key in loaded_feats for arr in loaded_feats[key]]
 all_descriptors = np.vstack(flattened_feats)
 b_acc = 0
 
-for num_clusters in tqdm(range(10, 20, 10)): # Best seems to be 80
+for num_clusters in tqdm(range(10, 250, 10)): # Best seems to be 80
     kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
 
     lists_of_full = []
@@ -66,4 +66,6 @@ for num_clusters in tqdm(range(10, 20, 10)): # Best seems to be 80
     if acc > b_acc:
         b_acc = acc
         b_n = num_clusters
-print(f"Best performance for {num_clusters} words with 5-fold average accuracy of {b_acc}")
+        print(f"Best performance for {num_clusters} words with 5-fold average accuracy of {b_acc}")
+
+# %%
