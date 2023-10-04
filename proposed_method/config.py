@@ -1,7 +1,8 @@
+import os
 import json
 # Colab w Alisa
 # General configurations
-experiment_name = "med_experiment1"
+experiment_name = "med_experiment2"
 classes = ['asthma', 'control']
 images_loc = "../../colab_alisa"
 experiment_loc = f"results/{experiment_name}"
@@ -12,7 +13,7 @@ trim = {"bottom": 0.08}
 # Fuzzy-sets configurations
 fs_delta = 10
 fs_connectivity = 8
-ds = [fs_delta, 15, 20]#[i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
+ds = [fs_delta]#[i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
 img_size = 100
 sets_feature_names = [
     'compactness',
@@ -48,19 +49,19 @@ graphlet_names = [f'g{i+1}' for i in range(num_clusters)] + \
     # [f"g3_{i+1}" for i in range(2)] + \
     # [f"g4_{i+1}" for i in range(6)]
 
-# variables = ["images_loc", "experiment_name", "fs_delta", "fs_connectivity", "num_bootstrap_iterations",
-#             "img_size", "sets_feature_names", "num_clusters", "max_graphlet_size", "edge_delta"]
+variables = ["images_loc", "experiment_name", "fs_delta", "fs_connectivity", "num_bootstrap_iterations",
+            "img_size", "sets_feature_names", "num_clusters", "max_graphlet_size", "edge_delta"]
 
-# experiment_parameters = {var: locals()[var] for var in variables}
+experiment_parameters = {var: eval(var) for var in variables}
 
 
-# if not os.path.exists(f"{images_loc}/graphical_models//{experiment_name}"):
-#     os.makedirs(f"{images_loc}/graphical_models//{experiment_name}")
-# else:
-#     print(f"the following directory already exists and content may be overwritten \n{images_loc}/graphical_models//{experiment_name}")
+if not os.path.exists(f"{images_loc}/graphical_models//{experiment_name}"):
+    os.makedirs(f"{images_loc}/graphical_models//{experiment_name}")
+else:
+    print(f"the following directory already exists and content may be overwritten \n{images_loc}/graphical_models//{experiment_name}")
 
-# with open(f"{images_loc}/graphical_models//{experiment_name}/experiment_parameter.json", "w") as file:
-#     json.dump(experiment_parameters, file)
+with open(f"{images_loc}/graphical_models//{experiment_name}/experiment_parameter.json", "w") as file:
+    json.dump(experiment_parameters, file)
 
 # DTD usecase
 ## General configurations

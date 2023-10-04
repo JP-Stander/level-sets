@@ -63,7 +63,7 @@ for clas, img_name in images_for_inference.items():
         # coefs_plane[level_sets==ls] = coefs[f"g{g_number+1}"]
         ls_idx = [a for a in eval(data.get("pixel_indices"))] if ")," in data.get("pixel_indices") else [eval(data.get("pixel_indices"))]
         rows, cols = zip(*ls_idx)
-        coefs_plane[rows, cols] = coefs[f"g{g_number+1}"] if min_idx[0] not in contains_zero else None
+        coefs_plane[rows, cols] = coefs[f"g{g_number+1}"] if f"g{g_number+1}" not in contains_zero else None
     # subgraph_counts = count_unique_subgraphs(graph, 2)
     # sorted_sg = dict(sorted(subgraph_counts.items()))
 
