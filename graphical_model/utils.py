@@ -55,19 +55,19 @@ def graphical_model(
         get_fuzzy_sets(img, fuzzy_cutoff, connectivity) + 1
     uni_level_sets = pd.unique(level_sets.flatten())
     results = []
-    width, _ = img.shape
+    width, height = img.shape
 
     for ls in uni_level_sets:
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = (level_sets == ls) * ls
         set_value = img[subset[0]]
-        set_size = len(subset) / (img.shape[0] * img.shape[1]) if size_proportion else len(subset)
+        set_size = len(subset) / (width * height) if size_proportion else len(subset)
         points = MultiPoint(subset)
         centroid = points.centroid if centroid_method == "mean" else points.representative_point()
         centroid = mapping(centroid)['coordinates']
         intensity = set_value / 255 if should_normalise else set_value
 
-        metrics = get_metrics(level_set, metric_names=metric_names)
+        metrics = get_metrics(level_set, metric_names=metric_names, img_size=[width, height])
         result = {**metrics, **{
             "level-set": ls,
             "x-coor": centroid[0] / width if normalise_pixel_index else centroid[0],

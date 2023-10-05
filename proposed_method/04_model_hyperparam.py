@@ -14,11 +14,11 @@ warnings.simplefilter(action='ignore', category=Warning)
 # %%
 
 # Load the features dictionary
-with open(f"{experiment_loc}/feats.pkl", 'rb') as f:
+with open(f"{experiment_loc}/feats_full.pkl", 'rb') as f:
     loaded_feats = pickle.load(f)
 
 for key in loaded_feats:
-    loaded_feats[key] = [np.array(arr) for arr in loaded_feats[key]]
+    loaded_feats[key] = [np.array(arr)[:-1,] for arr in loaded_feats[key]]
 
 # Load the subgraphs dictionary
 with open(f"{experiment_loc}/subgraphs.pkl", 'rb') as f:

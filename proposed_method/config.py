@@ -2,10 +2,10 @@ import os
 import json
 # Colab w Alisa
 # General configurations
-experiment_name = "med_experiment2"
+experiment_name = "med_experiment3"
 classes = ['asthma', 'control']
 images_loc = "../../colab_alisa"
-experiment_loc = f"results/{experiment_name}"
+
 
 # Image configurations
 trim = {"bottom": 0.08}
@@ -13,7 +13,7 @@ trim = {"bottom": 0.08}
 # Fuzzy-sets configurations
 fs_delta = 10
 fs_connectivity = 8
-ds = [fs_delta]#[i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
+ds = [15, 20]#[i for i in range(26)] + [30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 120, 140, 160, 180, 200, 220, 240, 255]
 img_size = 100
 sets_feature_names = [
     'compactness',
@@ -23,7 +23,7 @@ sets_feature_names = [
 ]
 
 # Bag-of-visual-words configurations
-num_clusters = 200
+num_clusters = 50
 max_graphlet_size = 2
 
 # Graphical model configurations
@@ -63,6 +63,7 @@ else:
 with open(f"{images_loc}/graphical_models//{experiment_name}/experiment_parameter.json", "w") as file:
     json.dump(experiment_parameters, file)
 
+experiment_loc = f"results/{experiment_name}/fuzzy_set_{fs_delta}"
 # DTD usecase
 ## General configurations
 # experiment_name = "experiment3"

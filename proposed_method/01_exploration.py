@@ -80,7 +80,7 @@ print(pd.DataFrame(table_data))
 from utils import get_img_nea, make_graph
 import networkx as nx
 import numpy as np
-image = images[0]
+image = '../../colab_alisa/asthma/A1_PRP+T_40X_03.tif'#images[0]
 sets_feature_names = [
     'compactness',
     'elongation',
@@ -89,6 +89,11 @@ sets_feature_names = [
 ]
 n,e,a = get_img_nea(image, d=10, img_size=100, connectivity=fs_connectivity, metric_names=sets_feature_names, trim=trim)
 
+# d=10
+# img_size=100
+# connectivity=fs_connectivity
+# metric_names=sets_feature_names
+# trim=trim
 #%%
 delta = 0.25
 print(f"Number of edges greater than {delta}: {np.sum(e.flatten() > delta)/2}")

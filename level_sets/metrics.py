@@ -196,7 +196,7 @@ def _get_convexity(region, area):
     convex_area = np.sum(convex_image)
     return area/convex_area
 
-def get_metrics(data, indecis=False, metric_names = ["all"], img_size=[0,0]):
+def get_metrics(data, img_size, indecis=False, metric_names = ["all"]):
     if indecis is True:
         pixels = [a for a in eval(data.get("pixel_indices"))] if ")," in data.get("pixel_indices") else [eval(data.get("pixel_indices"))]
         img_size = max(max(a[0] for a in pixels), max(a[1] for a in pixels))
