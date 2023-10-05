@@ -43,7 +43,7 @@ df = pd.DataFrame([(clas, metric, value)
                 for metric, value in metrics_dict.items()],
             columns=["Class", "Metric", "Value"]
             )
-# Now, you can plot using seaborn
+# %% Now, you can plot using seaborn
 for metric in pd.unique(df["Metric"]):
     plt.figure()
     for clas in classes:
