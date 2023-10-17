@@ -1,35 +1,37 @@
 import os
 import json
 
-config_name = "dtd"
+config_name = "med"
 
+# med_exp3: 80
+# med_exp4: 100,30
 configs = {
     # Colab w Alisa
     "med": {
         # General configurations
-        "experiment_name": "med_experiment3",
+        "experiment_name": "med_experiment4",
         "classes": ['asthma', 'control'],
         "images_loc": "../../colab_alisa",
         # Image configurations
         "trim": {"bottom": 0.08},
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 10,
+        "fs_delta": 15,
         "fs_connectivity": 8,
         "ds": [10, 15, 20],
         "sets_feature_names": [
             'compactness', 'elongation', 'area', 'angle'
         ],
         # Bag-of-visual-words configurations
-        "num_clusters": 50,
+        "num_clusters": 50, #30
         "max_graphlet_size": 2,
         # Graphical model configurations
         "edge_delta": 0.25,
         # Bootstrap configurations
         "num_bootstrap_iterations": 1000,
         "images_for_inference": {
-            "asthma": ["A5_PRP+T_40X_05.tif"],
-            "control": ["C1509_PPP_T_30K_05.tif"]
+            "asthma": ["A5_PRP+T_40X_05.tif", "A4_PRP+T_40X_03.tif"],
+            "control": ["C1509_PPP_T_30K_05.tif", "Conradie_PPP_T_20K_02.tif"]
         },
         "graphlet_names": ["g2_1"] #+ \
             # [f"g3_{i+1}" for i in range(2)] + \

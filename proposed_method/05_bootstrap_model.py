@@ -1,5 +1,5 @@
 # %%
-from utils import process_sublist
+from utils import process_sublist, load_data_from_npy
 import numpy as np
 import pandas as pd
 import pickle
@@ -12,23 +12,20 @@ from config import num_bootstrap_iterations, experiment_loc, num_clusters, class
 import joblib
 
 # %%
-# Load the features dictionary
-with open(f"{experiment_loc}/feats.pkl", 'rb') as f:
-    loaded_feats = pickle.load(f)
 
-for key in loaded_feats:
-    loaded_feats[key] = [np.array(arr) for arr in loaded_feats[key]]
+loaded_feats = {key: load_data_from_npy(experiment_loc, key, "train") for key in classes}
+loaded_subgraphs = {}
 
-# Load the subgraphs dictionary
-with open(f"{experiment_loc}/subgraphs.pkl", 'rb') as f:
-    loaded_subgraphs = pickle.load(f)
+for key in classes:
+    # Load training subgraphs for the key
+    with open(f"{experiment_loc}/{key}_train_subgraphs.pkl", 'rb') as f:
+        train_subgraphs = pickle.load(f)
 
-for key in loaded_subgraphs:
-    loaded_subgraphs[key] = [np.array(arr) for arr in loaded_subgraphs[key]]
-
+    # Combine train and test subgraphs for the key
+    loaded_subgraphs[key] = train_subgraphs
 # %%
 
-flattened_feats = [arr for key in loaded_feats for arr in loaded_feats[key]]
+flattened_feats = [arr[:,:-1] for key in loaded_feats for arr in loaded_feats[key]]
 all_descriptors = np.vstack(flattened_feats)
 
 kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
@@ -36,7 +33,7 @@ kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
 lists_of_full = []
 
 for key in loaded_feats.keys():
-    sublist_descriptors = loaded_feats[key]
+    sublist_descriptors = [arr[:,:-1] for arr in loaded_feats[key]]
     sublist_add_features = loaded_subgraphs[key]
     lists_of_full.append(process_sublist(sublist_descriptors, sublist_add_features, kmeans))
 
@@ -86,15 +83,39 @@ print("Intercepts")
 print(intercept)
 
 # %%
+
 clf = LogisticRegression(max_iter=1000, solver='liblinear', penalty="l2")
 clf.fit(X, y)
-final_model = LogisticRegression(max_iter=1000, solver='liblinear', penalty="l2").fit(X, y)
 
-# final_model.coef_ = coefficients
-# final_model.intercept_ = np.array([intercept])
-print(f"Model accuracy: {clf.score(X, y)}")
-print(f"Model accuracy: {final_model.score(X, y)}")
-joblib.dump(final_model, f'{experiment_loc}/logistic_regression_model.pkl')
+test_feats = {key: load_data_from_npy(experiment_loc, key, "test") for key in classes}
+test_subgraphs = {}
+
+for key in classes:
+    # Load training subgraphs for the key
+    with open(f"{experiment_loc}/{key}_test_subgraphs.pkl", 'rb') as f:
+        temp_subgraphs = pickle.load(f)
+
+    # Combine train and test subgraphs for the key
+    test_subgraphs[key] = temp_subgraphs
+lists_of_test = []
+for key in test_feats.keys():
+    sublist_descriptors = [arr[:,:-1] for arr in test_feats[key]]
+    sublist_add_features = loaded_subgraphs[key]
+    lists_of_test.append(process_sublist(sublist_descriptors, sublist_add_features, kmeans))
+
+X_test = []
+y_test = []
+
+for class_index, sublist in enumerate(lists_of_test):
+    X_test.extend(sublist)
+    y_test.extend([class_index] * len(sublist))
+tst_acc = clf.score(X_test, y_test)
+print(f"Test accuracy: {tst_acc}")
+
+# clf.coef_ = coefficients
+# clf.intercept_ = np.array([intercept])
+print(f"Model test accuracy: {clf.score(X_test, y_test)}")
+joblib.dump(clf, f'{experiment_loc}/logistic_regression_model.pkl')
 joblib.dump(kmeans, f'{experiment_loc}/kmeans.pkl') 
 
 with open(f"{experiment_loc}/contains_zero.txt", "w") as f:

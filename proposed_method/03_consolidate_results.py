@@ -13,6 +13,7 @@ import networkx as nx
 from config import nodes_feature_names, classes, graphs_location, experiment_loc, trim, max_graphlet_size
 from subgraph.counter import count_unique_subgraphs
 warnings.simplefilter(action='ignore', category=Warning)
+from sklearn.model_selection import train_test_split
 
 # %% Build dataset
 
@@ -54,22 +55,41 @@ for i, file in enumerate(tqdm(graph_files)):
 if not os.path.exists(experiment_loc):
     os.makedirs(experiment_loc)
 
-feats_to_save = feats.copy()
-for key in feats_to_save.keys():
-    feats_to_save[key] = [arr.tolist() for arr in feats_to_save[key]]
-# Save the dictionary
-if pix_idx is True:
-    with open(f"{experiment_loc}/feats_full.pkl", 'wb') as f:
-        pickle.dump(feats_to_save, f)
-else:
-    with open(f"{experiment_loc}/feats.pkl", 'wb') as f:
-        pickle.dump(feats_to_save, f)
-
-subgraphs_to_save = connected_subgraphs.copy()
-for key in subgraphs_to_save.keys():
-    subgraphs_to_save[key] = [arr.tolist() for arr in subgraphs_to_save[key]]
-# Save the dictionary
-with open(f"{experiment_loc}/subgraphs.pkl", 'wb') as f:
-    pickle.dump(subgraphs_to_save, f)
+train_ratio = 0.8
+for key in feats.keys():
+    # Get the number of arrays in the list (which corresponds to the number of images)
+    num_images = len(feats[key])
+    
+    # Generate indices and split them into training and testing
+    indices = list(range(num_images))
+    train_indices, test_indices = train_test_split(indices, test_size=1-train_ratio, random_state=42)
+    
+    # Split feats
+    train_feats = [feats[key][i] for i in train_indices]
+    test_feats = [feats[key][i] for i in test_indices]
+    
+    # Split connected_subgraphs
+    train_subgraphs = [connected_subgraphs[key][i] for i in train_indices]
+    test_subgraphs = [connected_subgraphs[key][i] for i in test_indices]
+    
+    # Save training feats
+    combined_array_train = np.vstack(train_feats)
+    np.save(f"{experiment_loc}/{key}_train_data.npy", combined_array_train)
+    indices_train = np.cumsum([0] + [arr.shape[0] for arr in train_feats])
+    np.save(f"{experiment_loc}/{key}_train_indices.npy", indices_train)
+    
+    # Save testing feats
+    combined_array_test = np.vstack(test_feats)
+    np.save(f"{experiment_loc}/{key}_test_data.npy", combined_array_test)
+    indices_test = np.cumsum([0] + [arr.shape[0] for arr in test_feats])
+    np.save(f"{experiment_loc}/{key}_test_indices.npy", indices_test)
+    
+    # Save training subgraphs
+    with open(f"{experiment_loc}/{key}_train_subgraphs.pkl", 'wb') as f:
+        pickle.dump(train_subgraphs, f)
+    
+    # Save testing subgraphs
+    with open(f"{experiment_loc}/{key}_test_subgraphs.pkl", 'wb') as f:
+        pickle.dump(test_subgraphs, f)
 
 # %%

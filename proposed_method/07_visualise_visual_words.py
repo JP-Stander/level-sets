@@ -17,7 +17,7 @@ kmeans = joblib.load(f"{experiment_loc}/kmeans.pkl")
 model = joblib.load(f"{experiment_loc}/logistic_regression_model.pkl")
 # %%
 
-flattened_feats_full = [arr for key in loaded_feats for arr in loaded_feats[key]]
+flattened_feats_full = [arr[:,:5] for key in loaded_feats for arr in loaded_feats[key]]
 all_descriptors_full = np.vstack(flattened_feats_full)
 all_descriptors = all_descriptors_full[:,:-1]
 # %%

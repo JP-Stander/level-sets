@@ -9,6 +9,17 @@ from images.utils import load_image
 from graphical_model.utils import graphical_model
 
 #%%
+def load_data_from_npy(experiment_loc, key, stage="train"):
+    if os.path.exists(f"{experiment_loc}/{key}_{stage}_data.npy"):
+        data = np.load(f"{experiment_loc}/{key}_{stage}_data.npy", allow_pickle=True)
+        indices = np.load(f"{experiment_loc}/{key}_{stage}_indices.npy")
+        
+        list_of_arrays = [data[indices[i]:indices[i+1]] for i in range(len(indices)-1)]
+        
+        return list_of_arrays
+    else:
+        return []
+
 def make_graph(nodes, edges, attrs, d=0.005):
     g = Graph()
     edges = (edges > d) * edges
