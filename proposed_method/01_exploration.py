@@ -27,7 +27,7 @@ metrics = {clas: [] for clas in classes}
 for image in tqdm(images):
     img = load_image(image, [img_size, img_size], trim=trim)
     # level_sets = get_level_sets(img)
-    level_sets = get_fuzzy_sets(img, fs_delta, fs_connectivity)
+    level_sets = get_fuzzy_sets(img, 35, fs_connectivity)
     uni_level_sets = pd.unique(level_sets.flatten())
     for i, ls in enumerate(uni_level_sets):
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
@@ -141,4 +141,28 @@ ls_spatial_dist="euclidean"
 ls_attr_dist="cityblock"
 centroid_method="mean"
 metric_names = sets_feature_names
+# %%
+
+image = images[-80]
+
+img = load_image(image, [img_size, img_size], trim=trim)
+level_sets = get_fuzzy_sets(img, 35, fs_connectivity)
+
+# Create a figure
+plt.figure(figsize=(10, 5))
+
+# First subplot for image1
+plt.subplot(1, 2, 1)  # (1 row, 2 columns, first subplot)
+plt.imshow(img, cmap='gray')
+plt.title('Image')
+plt.axis('off')  # to hide axes
+
+# Second subplot for image2
+plt.subplot(1, 2, 2)  # (1 row, 2 columns, second subplot)
+plt.imshow(level_sets)
+plt.title('Level-sets')
+plt.axis('off')  # to hide axes
+
+plt.tight_layout()  # Adjust spacing between subplots
+plt.show()
 # %%

@@ -9,18 +9,18 @@ configs = {
     # Colab w Alisa
     "med": {
         # General configurations
-        "experiment_name": "med_experiment4",
+        "experiment_name": "med_experiment5",
         "classes": ['asthma', 'control'],
         "images_loc": "../../colab_alisa",
         # Image configurations
         "trim": {"bottom": 0.08},
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 15,
+        "fs_delta": 30,
         "fs_connectivity": 8,
-        "ds": [10, 15, 20],
+        "ds": [25, 30, 35],
         "sets_feature_names": [
-            'compactness', 'elongation', 'area', 'angle'
+            'compactness', 'elongation', 'extent', 'angle'
         ],
         # Bag-of-visual-words configurations
         "num_clusters": 50, #30
