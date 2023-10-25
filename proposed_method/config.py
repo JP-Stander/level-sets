@@ -9,18 +9,18 @@ configs = {
     # Colab w Alisa
     "med": {
         # General configurations
-        "experiment_name": "med_experiment5",
+        "experiment_name": "med_experiment4",
         "classes": ['asthma', 'control'],
         "images_loc": "../../colab_alisa",
         # Image configurations
         "trim": {"bottom": 0.08},
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 30,
+        "fs_delta": 15,
         "fs_connectivity": 8,
         "ds": [25, 30, 35],
         "sets_feature_names": [
-            'compactness', 'elongation', 'extent', 'angle'
+            'compactness', 'elongation', 'area', 'angle'
         ],
         # Bag-of-visual-words configurations
         "num_clusters": 50, #30
@@ -39,21 +39,21 @@ configs = {
     },
     "dtd": {
         # General configurations
-        "experiment_name": "experiment3",
+        "experiment_name": "experiment4",
         "classes": ['dotted', 'fibrous'],
         "images_loc": "../../dtd/images",
         # Image configurations
         "trim": None,
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 10,
+        "fs_delta": 15,
         "fs_connectivity": 8,
         "ds": [10, 15, 20],
         "sets_feature_names": [
-            'compactness', 'elongation', 'convexity', 'extent'
+            'compactness', 'elongation', 'area', 'angle'
         ],
         # Bag-of-visual-words configurations
-        "num_clusters": 10, #80
+        "num_clusters": 50, #80
         "max_graphlet_size": 4,
         # Graphical model configurations
         "edge_delta": 0.5,
