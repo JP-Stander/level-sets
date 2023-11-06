@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from config import num_bootstrap_iterations, experiment_loc, num_clusters, classes, sets_feature_names, trim
 import joblib
 import sys
+import os
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, "/".join(current_script_directory.split("/")[:-1]))
 from level_sets.metrics import get_metrics
@@ -85,21 +86,22 @@ labels2 = kmeans2.predict(all_descriptors)
 #%%
 kmeans = kmeans2
 
-lists_of_full = []
+lists_of_full = {}
 
 for key in loaded_feats.keys():
     sublist_descriptors = [arr[:,:-1] for arr in loaded_feats[key]]
     sublist_add_features = loaded_subgraphs[key]
-    lists_of_full.append(process_sublist(sublist_descriptors, sublist_add_features, kmeans))
+    # lists_of_full.append(process_sublist(sublist_descriptors, sublist_add_features, kmeans))
+    lists_of_full[key] = process_sublist(sublist_descriptors, sublist_add_features, kmeans)
 
 X = []
 y = []
 y_label = []
 
-for class_index, sublist in enumerate(lists_of_full):
+for key, sublist in lists_of_full.items():#enumerate(lists_of_full):
     X.extend(sublist)
-    y.extend([class_index] * len(sublist))
-    y_label.extend([classes[class_index]] * len(sublist))
+    y.extend([classes.index(key)] * len(sublist))
+    y_label.extend([classes[classes.index(key)]] * len(sublist))
 
 
 coef_samples = np.zeros((num_bootstrap_iterations, X[0].shape[0]))
@@ -170,12 +172,12 @@ print(f"Test accuracy: {tst_acc}")
 # clf.coef_ = coefficients
 # clf.intercept_ = np.array([intercept])
 # print(f"Model test accuracy: {clf.score(X_test, y_test)}")
-# joblib.dump(clf, f'{experiment_loc}/logistic_regression_model.pkl')
-# joblib.dump(kmeans, f'{experiment_loc}/kmeans.pkl') 
+joblib.dump(clf, f'{experiment_loc}/logistic_regression_model.pkl')
+joblib.dump(kmeans, f'{experiment_loc}/kmeans.pkl') 
 
-# with open(f"{experiment_loc}/contains_zero.txt", "w") as f:
-#     for item in contains_zero:
-#         f.write("%s\n" % item)
+with open(f"{experiment_loc}/contains_zero.txt", "w") as f:
+    for item in contains_zero:
+        f.write("%s\n" % item)
 
 
 # %%

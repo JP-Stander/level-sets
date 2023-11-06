@@ -24,19 +24,22 @@ for clas in classes:
 # Initialize metrics dictionary
 metrics = {clas: [] for clas in classes}
 
-for image in tqdm(images):
+for image in tqdm(images[:10]+images[-10:]):
     img = load_image(image, [img_size, img_size], trim=trim)
     # level_sets = get_level_sets(img)
-    level_sets = get_fuzzy_sets(img, 35, fs_connectivity)
+    level_sets = get_fuzzy_sets(img, 10, fs_connectivity)
     uni_level_sets = pd.unique(level_sets.flatten())
     for i, ls in enumerate(uni_level_sets):
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = np.array(level_sets == ls)
+        set_value = np.mean([img[s] for s in subset])
+        if len(subset) <= 2:
+            continue
         metric_results = get_metrics(level_set.astype(int), img_size=[img_size, img_size])
         clas = image.split("/")[-2]
         metrics[clas] += [metric_results]
 
-# %% Plot distributions (optional)
+# Create dataframe
 df = pd.DataFrame([(clas, metric, value)
                 for clas, metrics_list in metrics.items() 
                 for metrics_dict in metrics_list 
@@ -44,12 +47,13 @@ df = pd.DataFrame([(clas, metric, value)
             columns=["Class", "Metric", "Value"]
             )
 # %% Now, you can plot using seaborn
-for metric in pd.unique(df["Metric"]):
+for metric in ["compactness", "elongation"]:
     plt.figure()
     for clas in classes:
         subset = df.loc[(df["Class"] == clas) & (df["Metric"] == metric), "Value"]
         sns.kdeplot(subset, label=clas, fill=True)
     plt.title(f'Distribution of {metric} across classes')
+    plt.legend()
     plt.tight_layout()
     plt.show()
 
@@ -143,10 +147,10 @@ centroid_method="mean"
 metric_names = sets_feature_names
 # %%
 
-image = images[-80]
+image = images[80]
 
 img = load_image(image, [img_size, img_size], trim=trim)
-level_sets = get_fuzzy_sets(img, 35, fs_connectivity)
+level_sets = get_fuzzy_sets(img, 15, fs_connectivity)
 
 # Create a figure
 plt.figure(figsize=(10, 5))
@@ -165,4 +169,23 @@ plt.axis('off')  # to hide axes
 
 plt.tight_layout()  # Adjust spacing between subplots
 plt.show()
+# %%
+image = images[88]
+
+img = load_image(image, [img_size, img_size], trim=trim)
+level_sets = get_fuzzy_sets(img, 10, fs_connectivity)
+for ls in pd.unique(level_sets.flatten()):
+    set_values = img[level_sets==ls]
+    # if set_values.mean() < 56:
+    #     level_sets[level_sets==ls] = None
+plt.figure()
+plt.imshow(img, 'gray')
+plt.imshow(
+    level_sets, alpha=0.5
+)
+plt.colorbar()
+plt.axis("off")
+plt.show()
+# %%
+pd.value_counts(level_sets.flatten())
 # %%

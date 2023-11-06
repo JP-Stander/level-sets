@@ -1,10 +1,12 @@
 # %%
 import numpy as np
 import pickle
+import json
 import joblib
 from matplotlib import pyplot as plt
-from config import experiment_loc, num_clusters, classes
+from config import experiment_loc, num_clusters, classes, sets_feature_names
 from utils import load_data_from_npy
+from level_sets.metrics import get_metrics
 
 # %%
 # Load the features dictionary
@@ -29,11 +31,13 @@ closest_indices = np.argmin(distances, axis=0)
 
 lr_coefs = model.coef_[:, :centroids.shape[0]]
 sorted_indices = np.argsort(lr_coefs.ravel())
-smallest_indices = sorted_indices[:3].tolist()
-largest_indices = sorted_indices[-3:].tolist()
+smallest_indices = sorted_indices.tolist()[:3]
+largest_indices = sorted_indices.tolist()[-3:]
 # %%
 for clas in classes:
     print(f"{clas} is class {classes.index(clas)}")
+# asthma is class 0
+# control is class 1
 for index in largest_indices+smallest_indices:
     closest_word = all_descriptors_full[closest_indices[index], :]
     pixel_idx = [a for a in eval(closest_word[5,])] if ")," in closest_word[5,] else [eval(closest_word[5,])]
@@ -57,11 +61,16 @@ for index in largest_indices+smallest_indices:
     cropped_image = cropped_image*closest_word[4,]
     if closest_word[4,] < 0.5:
         cropped_image[cropped_image==0]=1
-    
+    metrics = get_metrics((cropped_image!=0).astype(int), img_size=cropped_image.shape, metric_names=sets_feature_names)
     plt.figure()
     plt.imshow(cropped_image, "gray")
     plt.title(f"Coefficient value: {lr_coefs[:,index]}")
-    plt.show()
-    
+    plt.axis("off")
+    suffix = "pos" if lr_coefs[:,index] > 0 else "neg"
+    plt.savefig(f"{experiment_loc}/important_feats_{suffix}_{index}.png")
+    with open(f"{experiment_loc}/important_feats_{suffix}_{index}.json", "w") as file:
+        json.dump(metrics, file)
+    print(metrics)
+
 
 # %%

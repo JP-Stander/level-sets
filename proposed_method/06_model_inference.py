@@ -5,7 +5,6 @@ import joblib
 import pandas as pd
 import numpy as np
 from utils import process_sublist
-import networkx as nx
 from matplotlib import pyplot as plt
 current_script_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, "/".join(current_script_directory.split("/")[:-1]))
@@ -13,14 +12,13 @@ from subgraph.counter import count_unique_subgraphs
 from images.utils import load_image
 from utils import img_to_graph
 from matplotlib.colors import TwoSlopeNorm
-from level_sets.metrics import get_metrics
-from level_sets.utils import get_fuzzy_sets, get_level_sets
 from config import sets_feature_names, images_loc, graphs_location, \
         experiment_loc, results_location, graphlet_names, num_clusters, \
         fs_delta, img_size, edge_delta, fs_connectivity, max_graphlet_size, trim, \
         images_for_inference, classes, trim, nodes_feature_names
 import warnings
 warnings.simplefilter(action='ignore', category=Warning)
+graphlet_names = graphlet_names + ["g11", "g12", "g13", "g14",  "g15", "g16"]
 # %%
 for clas in classes:
     print(f"{clas} is class {classes.index(clas)}")
@@ -34,7 +32,7 @@ contains_zero = ["g"+g for g in contains_zero]
 # %%
 
 for clas, img_names in images_for_inference.items():
-    for img_name in img_names:
+    for img_name in img_names[:2]:
         img_name_only = img_name.split(".")[0]
         img_file = f"{images_loc}/{clas}/{img_name}"
         feats = {name: [] for name in classes}
@@ -101,18 +99,23 @@ for clas, img_names in images_for_inference.items():
         pred_df3 = lists_of_full[1][0] if len(lists_of_full[1])!=0 else lists_of_full[0][0]
         yhat = model.predict(pred_df3.reshape(1,-1))
         norm = TwoSlopeNorm(vmin=np.min(model.coef_), vcenter=0, vmax=np.max(model.coef_))
+        # if yhat == 1:
+        #     coefs_plane[coefs_plane<=0] = None
+        # else:
+        #     coefs_plane[coefs_plane>=0] = None
         plt.figure()
         plt.imshow(img, 'gray')
         plt.imshow(
-            coefs_plane, alpha=0.5,
+            coefs_plane, alpha=0.4,
             cmap = 'bwr',
             norm=norm
         )
         plt.colorbar()
         plt.axis("off")
+        plt.savefig(f"{results_location}/{img_name_only}_heatmap.png", bbox_inches='tight')
         plt.show()
-        plt.savefig(f"{results_location}/{img_name_only}_heatmap.png")
-
         print(f"Predicted class: {classes[yhat[0]]}({yhat[0]})")
         print(f"Actual class : {clas}")
+        break
+    break
 # %%

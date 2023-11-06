@@ -1,7 +1,7 @@
 import os
 import json
 
-config_name = "med"
+config_name = "dtd"
 
 # med_exp3: 80
 # med_exp4: 100,30
@@ -9,18 +9,18 @@ configs = {
     # Colab w Alisa
     "med": {
         # General configurations
-        "experiment_name": "med_experiment4",
+        "experiment_name": "med_experiment4", #4, 5,7 (10)best so far or 9 with 30 words, 10 with 10 words
         "classes": ['asthma', 'control'],
         "images_loc": "../../colab_alisa",
         # Image configurations
         "trim": {"bottom": 0.08},
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 15,
+        "fs_delta": 10,
         "fs_connectivity": 8,
-        "ds": [25, 30, 35],
+        "ds": [10,15,20],
         "sets_feature_names": [
-            'compactness', 'elongation', 'area', 'angle'
+            "compactness", "elongation", "angle", "convexity"
         ],
         # Bag-of-visual-words configurations
         "num_clusters": 50, #30
@@ -30,8 +30,19 @@ configs = {
         # Bootstrap configurations
         "num_bootstrap_iterations": 1000,
         "images_for_inference": {
-            "asthma": ["A5_PRP+T_40X_05.tif", "A4_PRP+T_40X_03.tif"],
-            "control": ["C1509_PPP_T_30K_05.tif", "Conradie_PPP_T_20K_02.tif"]
+            "asthma": [
+                "A5_PRP+T_40X_05.tif",
+                "A4_PRP+T_40X_03.tif",
+                "A15_PRP+T_10X_18.tif",
+                "A29_PRP+T_40X_08.tif"
+            ],
+            "control": [
+                "C1509_PPP_T_30K_05.tif",
+                "Conradie_PPP_T_20K_02.tif",
+                "C1509_PPP_T_45K_16.tif",
+                "van Zyl_PPP_T_20K_03.tif",
+                "resia_PPP_T_20K_05.tif"
+            ]
         },
         "graphlet_names": ["g2_1"] #+ \
             # [f"g3_{i+1}" for i in range(2)] + \
@@ -39,22 +50,22 @@ configs = {
     },
     "dtd": {
         # General configurations
-        "experiment_name": "experiment4",
+        "experiment_name": "dtd_experiment7", #exp6 w n_clusters as 80
         "classes": ['dotted', 'fibrous'],
-        "images_loc": "../../dtd/images",
+        "images_loc": "../../dtd/binary",
         # Image configurations
         "trim": None,
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 15,
+        "fs_delta": 10,
         "fs_connectivity": 8,
         "ds": [10, 15, 20],
         "sets_feature_names": [
-            'compactness', 'elongation', 'area', 'angle'
+            'compactness', 'elongation', 'convexity', 'extent'
         ],
         # Bag-of-visual-words configurations
-        "num_clusters": 50, #80
-        "max_graphlet_size": 4,
+        "num_clusters": 10, #20
+        "max_graphlet_size": 2,
         # Graphical model configurations
         "edge_delta": 0.5,
         # Bootstrap configurations
@@ -63,9 +74,9 @@ configs = {
             "dotted": ["dotted_0188.jpg", "dotted_0111.jpg", "dotted_0180.jpg"],
             "fibrous": ["fibrous_0191.jpg", "fibrous_0108.jpg", "fibrous_0116.jpg"]
         },
-        "graphlet_names": ["g2_1"] + \
-            [f"g3_{i+1}" for i in range(2)] + \
-            [f"g4_{i+1}" for i in range(6)]
+        "graphlet_names": ["g2_1"] #+ \
+            # [f"g3_{i+1}" for i in range(2)] + \
+            # [f"g4_{i+1}" for i in range(6)]
     }
 }
 

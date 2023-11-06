@@ -32,7 +32,7 @@ flattened_feats = [arr[:,:-1] for key in loaded_feats for arr in loaded_feats[ke
 all_descriptors = np.vstack(flattened_feats)
 b_acc = 0
 
-for num_clusters in tqdm(range(10, 150, 10)): # Best seems to be 80
+for num_clusters in tqdm(range(10, 110, 10)): # Best seems to be 80
     kmeans = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
 
     lists_of_full = []

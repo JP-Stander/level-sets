@@ -18,7 +18,7 @@ from level_sets.utils import get_fuzzy_sets, get_level_sets
 
 # %%
 images_loc = "../../dtd/images"
-classes = ["striped", "honeycombed"]
+classes = ["dotted", "fibrous"]
 images = []
 for clas in classes:
     images += [f"{images_loc}/{clas}/" + file for file in os.listdir(f"{images_loc}/{clas}")]
@@ -49,37 +49,90 @@ df = pd.DataFrame([(clas, metric, value)
             )
 
 #%%
+import pandas as pd
+import numpy as np
+from scipy.stats import skew, kurtosis, mode
 for metric_name in pd.unique(df["Metric"]):
-    values1 = df.loc[(df["Class"] == classes[0]) & (df["Metric"] == metric_name), "Value"]
-    values2 = df.loc[(df["Class"] == classes[1]) & (df["Metric"] == metric_name), "Value"]
-    skewness1 = skew(values1)
-    kurtosis1 = kurtosis(values1, fisher=True)
-    skewness2 = skew(values2)
-    kurtosis2 = kurtosis(values2, fisher=True)
-    print(metric_name)
-    print(f"Skewness of class 1: {skewness1:.2f}")
-    print(f"Skewness of class 2: {skewness2:.2f}")
-    print(f"Kurtosis of class 1: {kurtosis1:.2f}")
-    print(f"Kurtosis of class 2: {kurtosis2:.2f}")
+    for class_name in classes:
+        values = df.loc[(df["Class"] == class_name) & (df["Metric"] == metric_name), "Value"]
+        skewness = skew(values)
+        kurt = kurtosis(values, fisher=True)
+        mean = np.mean(values)
+        median = np.median(values)
+        mode_result = mode(values)
+        
+        print(f"Metric: {metric_name}, Class: {class_name}")
+        print(f"Skewness: {skewness:.2f}")
+        print(f"Kurtosis: {kurt:.2f}")
+        print(f"Mean: {mean:.2f}")
+        print(f"Median: {median:.2f}")
+        print(f"Mode: {mode_result.mode[0]:.2f} (Count: {mode_result.count[0]})")
+        print()
+#%%
+measures = ['Kurtosis', 'Skewness', 'Mean', 'Median', 'Modality']
+
+latex_table = "\\begin{tabular}{c|cc}\n"
+latex_table += "\t\\textbf{Metric} & \\textbf{Dotted} & \\textbf{Fibrous}\\\\\n"
+latex_table += "\t\\hline\n"
+
+latex_table = "\\begin{tabular}{c|cc}\n"
+latex_table += "\t\\textbf{Metric} & \\textbf{Dotted} & \\textbf{Fibrous}\\\\\n"
+latex_table += "\t\\hline\n"
+
+for metric_name in pd.unique(df["Metric"]):
+    latex_table += f"\t{metric_name} & & \\\\\n"
+    for measure in measures:
+        results = []
+        for class_name in classes:
+            values = df.loc[(df["Class"] == class_name) & (df["Metric"] == metric_name), "Value"]
+            if measure == 'Kurtosis':
+                val = kurtosis(values, fisher=True)
+            elif measure == 'Skewness':
+                val = skew(values)
+            elif measure == 'Mean':
+                val = np.mean(values)
+            elif measure == 'Median':
+                val = np.median(values)
+            elif measure == 'Modality':
+                mode_result = mode(values, keepdims=True)
+                val = mode_result.mode[0]
+            else:
+                val = ''
+            results.append(f"{val:.2f}")
+        latex_table += f"\t{measure} & {results[0]} & {results[1]}\\\\\n"
+latex_table += "\\end{tabular}"
+print(latex_table)
+
 # %%
+from scipy.stats import norm
 
-metric = "compactness"
-data = df[df['Metric'] == metric]
+for metric in ["compactness", "elongation"]:
+    data = df[df['Metric'] == metric]
 
-plt.figure()
-sns.kdeplot(data=data, x='Value', hue='Class', common_norm=False, legend=False)
+    # Calculate the mean and standard deviation for the 'Value' column
+    mean_value = data['Value'].mean()
+    std_value = data['Value'].std()
+    
+    # Create a range of values for plotting the normal distribution
+    range_values = np.linspace(data['Value'].min(), data['Value'].max()+0.2, 100)
+    
+    # Get the PDF of the normal distribution with the same mean and std dev
+    normal_distribution = norm.pdf(range_values, mean_value, std_value)
 
-# Add labels and a title
-plt.xlabel(metric.capitalize())
-plt.ylabel('Density')
-# Show the plot
-plt.savefig(f"../../paper3_results/honeycomb_v_striped_{metric}.png")
+    plt.figure()
+    sns.kdeplot(data=data, x='Value', hue='Class', common_norm=False, legend=False)
+    plt.plot(range_values, normal_distribution, label='Normal Dist', linestyle='--', c="gray")
+    # Add labels and a title
+    plt.xlabel(metric.capitalize())
+    plt.ylabel('Density')
+    # Show the plot
+    plt.savefig(f"../../paper3_results/{classes[0]}_v_{classes[1]}_{metric}_with_normal.png")
 # %%
 from scipy.stats import gaussian_kde
-
-data = df[df['Metric'] == "compactness"]
-data1 = data[data["Class"]=="honeycombed"]["Value"]
-data2 = data[data["Class"]=="striped"]["Value"]
+metric = "compactness"
+data = df[df['Metric'] == metric]
+data1 = data[data["Class"]==classes[0]]["Value"]
+data2 = data[data["Class"]==classes[1]]["Value"]
 kde1 = gaussian_kde(data1)
 kde2 = gaussian_kde(data2)
 
@@ -95,13 +148,22 @@ intersection_area = np.trapz(intersection, x)
 union_area = np.trapz(union_, x)
 # %%
 
-plt.figure(figsize=(10, 6))
-plt.plot(x, pdf1, label='Honeycomb', color='blue', alpha=0.5)
-plt.plot(x, pdf2, label='Striped', color='green', alpha=0.5)
+plt.figure()#figsize=(10, 6))
+# plt.plot(x, pdf1, label='Honeycomb', color='blue', alpha=0.2)
+# plt.plot(x, pdf2, label='Striped', color='green', alpha=0.2)
 plt.fill_between(x, 0, intersection, color='red', alpha=0.5, label='Intersection')
 plt.plot(x, union_, label='Union', color='purple', linestyle='--')
 plt.legend()
-plt.show()
+plt.savefig(f"../../paper3_results/{classes[0]}_v_{classes[1]}_iou_{metric}.png")
 
 print(intersection_area/union_area)
+
+plt.figure()
+sns.kdeplot(data=data, x='Value', hue='Class', common_norm=False, legend=False)
+# Add labels and a title
+plt.xlabel(metric.capitalize())
+plt.ylabel('Density')
+# Show the plot
+plt.savefig(f"../../paper3_results/{classes[0]}_v_{classes[1]}_{metric}.png")
 # %%
+

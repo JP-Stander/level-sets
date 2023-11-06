@@ -60,7 +60,9 @@ def graphical_model(
     for ls in uni_level_sets:
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = (level_sets == ls) * ls
-        set_value = img[subset[0]]
+        set_value = np.mean([img[s] for s in subset])
+        # if set_value < 56:
+        #     continue
         set_size = len(subset) / (width * height) if size_proportion else len(subset)
         points = MultiPoint(subset)
         centroid = points.centroid if centroid_method == "mean" else points.representative_point()
