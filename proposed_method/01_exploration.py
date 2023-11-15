@@ -13,7 +13,7 @@ current_script_directory = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(1, "/".join(current_script_directory.split("/")[:-1]))
 from images.utils import load_image
 from level_sets.metrics import get_metrics
-from level_sets.utils import get_fuzzy_sets, get_level_sets
+from level_sets.utils import get_fuzzy_sets, get_level_sets, intersection_over_union
 
 # %%
 
@@ -24,7 +24,7 @@ for clas in classes:
 # Initialize metrics dictionary
 metrics = {clas: [] for clas in classes}
 
-for image in tqdm(images[:10]+images[-10:]):
+for image in tqdm(images):
     img = load_image(image, [img_size, img_size], trim=trim)
     # level_sets = get_level_sets(img)
     level_sets = get_fuzzy_sets(img, 10, fs_connectivity)
@@ -33,8 +33,8 @@ for image in tqdm(images[:10]+images[-10:]):
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
         level_set = np.array(level_sets == ls)
         set_value = np.mean([img[s] for s in subset])
-        if len(subset) <= 2:
-            continue
+        # if len(subset) <= 2:
+        #     continue
         metric_results = get_metrics(level_set.astype(int), img_size=[img_size, img_size])
         clas = image.split("/")[-2]
         metrics[clas] += [metric_results]
@@ -47,7 +47,7 @@ df = pd.DataFrame([(clas, metric, value)
             columns=["Class", "Metric", "Value"]
             )
 # %% Now, you can plot using seaborn
-for metric in ["compactness", "elongation"]:
+for metric in ["compactness", "elongation", "extent", "convexity"]:
     plt.figure()
     for clas in classes:
         subset = df.loc[(df["Class"] == clas) & (df["Metric"] == metric), "Value"]
@@ -68,15 +68,23 @@ for clas, _ in metrics.items():
 
 # %% KS-statistic
 table_data = []
-
+comparer = "ks"
 for metric_name in pd.unique(df["Metric"]):
     values1 = df.loc[(df["Class"] == classes[0]) & (df["Metric"] == metric_name), "Value"]
     values2 = df.loc[(df["Class"] == classes[1]) & (df["Metric"] == metric_name), "Value"]
-    ks_stat, p_value = ks_2samp(values1, values2)
+
+    if comparer == "iou":
+        ks_stat = intersection_over_union(values1, values2)
+    else:
+        ks_stat, p_value = ks_2samp(values1, values2)
+
     table_data.append((metric_name, ks_stat))
 
 # Sort the table data by KS statistics in descending order
-table_data.sort(key=lambda x: x[1], reverse=True)
+if comparer == "iou":
+    table_data.sort(key=lambda x: x[1], reverse=False)
+else:
+    table_data.sort(key=lambda x: x[1], reverse=True)
 print(pd.DataFrame(table_data))
 
 

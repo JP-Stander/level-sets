@@ -75,11 +75,6 @@ for clas, img_names in images_for_inference.items():
             pred_df4[g_num] += 1
             node_coef = coefs[g_num]
             signif = g_num not in contains_zero
-    #         if signif is True and node_coef != 0:
-    #             print("break")
-    #             break
-    #     break
-    # break
             if node_coef < 0 and signif:
                 n_word_count += 1
                 for metric in sets_feature_names:
@@ -118,15 +113,15 @@ for clas, img_names in images_for_inference.items():
         pred_df3 = lists_of_full[1][0] if len(lists_of_full[1])!=0 else lists_of_full[0][0]
         yhat = model.predict(pred_df3.reshape(1,-1))
         y = classes.index(clas)
-        if yhat[0]==y:
-            words_counts[y]["neg"] += [n_word_count]
-            words_counts[y]["pos"] += [p_word_count]
-            for metric in sets_feature_names:
-                if y == 1:
-                    predict_class_metrics[yhat[0]]["pos"][metric] += pos_metrics[metric]
-                if y == 0:
-                    predict_class_metrics[yhat[0]]["neg"][metric] += neg_metrics[metric]
-                predict_class_metrics[yhat[0]]["zero"][metric] += zero_metrics[metric]
+        # if yhat[0]==y:
+        words_counts[y]["neg"] += [n_word_count]
+        words_counts[y]["pos"] += [p_word_count]
+        for metric in sets_feature_names:
+            if y == 1:
+                predict_class_metrics[y]["pos"][metric] += pos_metrics[metric]
+            if y == 0:
+                predict_class_metrics[y]["neg"][metric] += neg_metrics[metric]
+            predict_class_metrics[y]["zero"][metric] += zero_metrics[metric]
 
 
 # %%

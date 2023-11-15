@@ -60,31 +60,31 @@ flattened_feats = [arr[:,:-1] for key in loaded_feats for arr in loaded_feats[ke
 all_descriptors = np.vstack(flattened_feats)
 
 kmeans1 = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
-kmeans2 = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
+# kmeans2 = KMeans(n_clusters=num_clusters, random_state=0).fit(all_descriptors)
 
-ball = create_ball((20, 20), 7)
-ball_metrics = get_metrics(ball, ball.shape, metric_names = sets_feature_names)
+# ball = create_ball((20, 20), 7)
+# ball_metrics = get_metrics(ball, ball.shape, metric_names = sets_feature_names)
 
-line1 = create_line((20, 20), 45)
-line_metrics1 = get_metrics(line1, line1.shape, metric_names = sets_feature_names)
+# line1 = create_line((20, 20), 45)
+# line_metrics1 = get_metrics(line1, line1.shape, metric_names = sets_feature_names)
 
-line2 = create_line((20, 20), 0)
-line_metrics2 = get_metrics(line2, line2.shape, metric_names = sets_feature_names)
+# line2 = create_line((20, 20), 0)
+# line_metrics2 = get_metrics(line2, line2.shape, metric_names = sets_feature_names)
 
-centroids = kmeans2.cluster_centers_
-new_centroids = np.vstack([np.append(np.array(list(metric.values())), i) for i in [0,1] for metric in [ball_metrics, line_metrics1, line_metrics2]])
+# centroids = kmeans2.cluster_centers_
+# new_centroids = np.vstack([np.append(np.array(list(metric.values())), i) for i in [0,1] for metric in [ball_metrics, line_metrics1, line_metrics2]])
 
-all_centroids = np.vstack([centroids, new_centroids])
+# all_centroids = np.vstack([centroids, new_centroids])
 
-# Modify the KMeans object
-kmeans2.cluster_centers_ = all_centroids
-kmeans2.n_clusters = len(all_centroids)
+# # Modify the KMeans object
+# kmeans2.cluster_centers_ = all_centroids
+# kmeans2.n_clusters = len(all_centroids)
 
-labels1 = kmeans1.predict(all_descriptors)
-labels2 = kmeans2.predict(all_descriptors)
+# labels1 = kmeans1.predict(all_descriptors)
+# labels2 = kmeans2.predict(all_descriptors)
 
 #%%
-kmeans = kmeans2
+kmeans = kmeans1
 
 lists_of_full = {}
 
@@ -167,7 +167,10 @@ for class_index, sublist in enumerate(lists_of_test):
     X_test.extend(sublist)
     y_test.extend([class_index] * len(sublist))
 tst_acc = clf.score(X_test, y_test)
+train_acc = clf.score(X, y)
 print(f"Test accuracy: {tst_acc}")
+print(f"Train accuracy: {train_acc}")
+print(np.mean(y_test))
 
 # clf.coef_ = coefficients
 # clf.intercept_ = np.array([intercept])
@@ -179,5 +182,19 @@ with open(f"{experiment_loc}/contains_zero.txt", "w") as f:
     for item in contains_zero:
         f.write("%s\n" % item)
 
+
+# %%
+from matplotlib import pyplot as plt
+import seaborn as sns
+from config import nodes_feature_names
+i = nodes_feature_names.index("convexity")
+metrics_1 = np.concatenate([arr[:,i] for arr in test_feats[classes[0]]])
+metrics_2 = np.concatenate([arr[:,i] for arr in test_feats[classes[1]]])
+
+plt.figure()
+sns.kdeplot(data=metrics_1, label=classes[0])
+sns.kdeplot(data=metrics_2, label=classes[1])
+# sns.kdeplot(data=predict_class_metrics[0]['zero'][metric], label="zero")
+plt.legend()
 
 # %%

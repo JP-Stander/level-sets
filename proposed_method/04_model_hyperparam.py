@@ -120,5 +120,5 @@ from sklearn import metrics
 confusion_matrix = metrics.confusion_matrix(y_test, yhat)
 cm_display = metrics.ConfusionMatrixDisplay(confusion_matrix = confusion_matrix, display_labels = [False, True])
 cm_display.plot()
-plt.show()
+# plt.show()
 # %%

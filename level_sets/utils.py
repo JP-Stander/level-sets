@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 from skimage import measure
+from scipy.stats import gaussian_kde
 from sklearn.metrics.pairwise import distance_metrics
 
 # Used for testing
@@ -26,6 +27,22 @@ def get_level_sets(img, connectivity=1):
 
     return level_sets.astype(np.float64)
 
+def intersection_over_union(data1, data2):
+    kde1 = gaussian_kde(data1)
+    kde2 = gaussian_kde(data2)
+
+    # Evaluate the PDFs on a grid
+    x = np.linspace(min(np.min(data1), np.min(data2)), max(np.max(data1), np.max(data2)), 1000)
+    pdf1 = kde1(x)
+    pdf2 = kde2(x)
+
+    # Calculate the intersection and union
+    intersection = np.minimum(pdf1, pdf2)
+    union_ = np.maximum(pdf1, pdf2)
+    intersection_area = np.trapz(intersection, x)
+    union_area = np.trapz(union_, x)
+    
+    return intersection_area/union_area
 
 def cut_level_set(img):
     img = np.array(img)

@@ -46,6 +46,7 @@ xgboost = "==1.7.6"
 torch = "*"
 cython = "*"
 torch-geometric = "*"
+pysal = "*"
 
 [dev-packages]
 ipykernel = "*"

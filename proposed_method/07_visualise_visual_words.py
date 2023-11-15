@@ -4,7 +4,7 @@ import pickle
 import json
 import joblib
 from matplotlib import pyplot as plt
-from config import experiment_loc, num_clusters, classes, sets_feature_names
+from config import experiment_loc, num_clusters, classes, sets_feature_names, config_name
 from utils import load_data_from_npy
 from level_sets.metrics import get_metrics
 
@@ -38,7 +38,8 @@ for clas in classes:
     print(f"{clas} is class {classes.index(clas)}")
 # asthma is class 0
 # control is class 1
-for index in largest_indices+smallest_indices:
+i = 1
+for index in smallest_indices+largest_indices:
     closest_word = all_descriptors_full[closest_indices[index], :]
     pixel_idx = [a for a in eval(closest_word[5,])] if ")," in closest_word[5,] else [eval(closest_word[5,])]
     height = max([a[0] for a in pixel_idx]) +2
@@ -67,10 +68,11 @@ for index in largest_indices+smallest_indices:
     plt.title(f"Coefficient value: {lr_coefs[:,index]}")
     plt.axis("off")
     suffix = "pos" if lr_coefs[:,index] > 0 else "neg"
-    plt.savefig(f"{experiment_loc}/important_feats_{suffix}_{index}.png")
-    with open(f"{experiment_loc}/important_feats_{suffix}_{index}.json", "w") as file:
+    plt.savefig(f"{experiment_loc}/important_feats_{suffix}_{i}_{config_name}.png")
+    with open(f"{experiment_loc}/important_feats_{suffix}_{i}.json", "w") as file:
         json.dump(metrics, file)
     print(metrics)
+    i += 1
 
 
 # %%

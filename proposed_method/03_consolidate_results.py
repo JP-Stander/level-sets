@@ -33,7 +33,6 @@ for i, file in enumerate(tqdm(graph_files)):
     for node, data in graph.nodes(data=True):
         for feature_name in nodes_feature_names:
             temp_df.loc[int(node), feature_name] = data[feature_name]
-        temp_df.loc[int(node), "intensity"] = data["intensity"]
         if pix_idx is True:
             temp_df.loc[int(node), "pixel_indices"] = data["pixel_indices"]
     subgraph_counts = count_unique_subgraphs(graph, max_graphlet_size)
