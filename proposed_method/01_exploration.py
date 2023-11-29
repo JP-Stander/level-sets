@@ -27,7 +27,7 @@ metrics = {clas: [] for clas in classes}
 for image in tqdm(images):
     img = load_image(image, [img_size, img_size], trim=trim)
     # level_sets = get_level_sets(img)
-    level_sets = get_fuzzy_sets(img, 10, fs_connectivity)
+    level_sets = get_fuzzy_sets(img, 0, fs_connectivity)
     uni_level_sets = pd.unique(level_sets.flatten())
     for i, ls in enumerate(uni_level_sets):
         subset = list(map(tuple, np.asarray(np.where(level_sets == ls)).T.tolist()))
@@ -68,7 +68,7 @@ for clas, _ in metrics.items():
 
 # %% KS-statistic
 table_data = []
-comparer = "ks"
+comparer = "iou"
 for metric_name in pd.unique(df["Metric"]):
     values1 = df.loc[(df["Class"] == classes[0]) & (df["Metric"] == metric_name), "Value"]
     values2 = df.loc[(df["Class"] == classes[1]) & (df["Metric"] == metric_name), "Value"]
@@ -87,6 +87,11 @@ else:
     table_data.sort(key=lambda x: x[1], reverse=True)
 print(pd.DataFrame(table_data))
 
+# %%
+df_metrics = pd.DataFrame(table_data)
+df_metrics = df_metrics.loc[df_metrics[0] != "bbox_area", :]
+df_metrics = df_metrics.loc[df_metrics[0] != "area", :]
+print(df_metrics.apply(lambda row: f'\\textbf{{{row[0]}}} & {row[1]:.4f} \\\\', axis=1).str.cat(sep='\n'))
 
 # %%
 from utils import get_img_nea, make_graph

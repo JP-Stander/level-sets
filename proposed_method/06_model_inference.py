@@ -100,10 +100,10 @@ for img_size in [100, 200]:
             pred_df3 = lists_of_full[1][0] if len(lists_of_full[1])!=0 else lists_of_full[0][0]
             yhat = model.predict(pred_df3.reshape(1,-1))
             norm = TwoSlopeNorm(vmin=np.min(model.coef_), vcenter=0, vmax=np.max(model.coef_))
-            if yhat == 1:
-                coefs_plane[coefs_plane<=0] = None
-            else:
-                coefs_plane[coefs_plane>=0] = None
+            # if yhat == 1:
+            #     coefs_plane[coefs_plane<=0] = None
+            # else:
+            #     coefs_plane[coefs_plane>=0] = None
             plt.figure()
             plt.imshow(img, 'gray')
             plt.imshow(
@@ -113,7 +113,7 @@ for img_size in [100, 200]:
             )
             plt.colorbar()
             plt.axis("off")
-            plt.savefig(f"{results_location}/{img_name_only}_heatmap_{experiment_name}_imgsize_{img_size}.png", bbox_inches='tight')
+            # plt.savefig(f"{results_location}/{img_name_only}_heatmap_{experiment_name}_imgsize_{img_size}.png", bbox_inches='tight')
             plt.show()
             plt.figure()
             plt.imshow(

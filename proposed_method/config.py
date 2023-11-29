@@ -16,7 +16,7 @@ configs = {
         "trim": {"bottom": 0.08},
         "img_size": 100,
         # Fuzzy-sets configurations
-        "fs_delta": 15,
+        "fs_delta": 10,
         "fs_connectivity": 8,
         "ds": [10,15,20],
         "sets_feature_names": [
@@ -50,7 +50,7 @@ configs = {
     },
     "dtd": { #best performing is exp7 with 10 words and no additional manual words added
         # General configurations
-        "experiment_name": "dtd_experiment7", #exp6 w n_clusters as 80
+        "experiment_name": "dtd_experiment11",
         "classes": ['dotted', 'fibrous'],
         "images_loc": "../../dtd/binary",
         # Image configurations
@@ -59,12 +59,12 @@ configs = {
         # Fuzzy-sets configurations
         "fs_delta": 10,
         "fs_connectivity": 8,
-        "ds": [10, 15, 20],
+        "ds": [10],
         "sets_feature_names": [
-            'compactness', 'elongation', 'convexity', 'extent'
+            'compactness', 'bbox_area', 'convexity', 'extent'
         ],
         # Bag-of-visual-words configurations
-        "num_clusters": 10, #70
+        "num_clusters": 10,
         "max_graphlet_size": 2,
         # Graphical model configurations
         "edge_delta": 0.5,
